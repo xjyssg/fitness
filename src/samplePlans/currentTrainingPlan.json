@@ -1,0 +1,155 @@
+{
+  "version": 1,
+  "planName": "8周训练计划 2026-05",
+  "days": [
+    {
+      "id": "strength-a",
+      "name": "力量A",
+      "focus": "上肢推拉 + 下肢中等强度",
+      "blocks": [
+        {
+          "exerciseId": "smith-bench",
+          "name": "史密斯卧推",
+          "primaryMuscles": ["胸大肌"],
+          "secondaryMuscles": ["肱三头肌", "三角肌前束"],
+          "progressionHint": "顶组达到 8 次后可考虑小幅加重。",
+          "sets": [
+            { "kind": "top", "plannedWeight": "两边各7.5kg", "targetReps": "6-8", "restSeconds": 180 },
+            { "kind": "backoff", "plannedWeight": "两边各5kg", "targetReps": "8-10", "restSeconds": 120 }
+          ]
+        },
+        {
+          "exerciseId": "lat-pulldown",
+          "name": "高位下拉",
+          "primaryMuscles": ["背阔肌"],
+          "secondaryMuscles": ["肱二头肌"],
+          "notes": "注意肩胛骨收紧",
+          "sets": [
+            { "kind": "top", "plannedWeight": "33kg", "targetReps": "8-10", "restSeconds": 150 },
+            { "kind": "backoff", "plannedWeight": "26kg", "targetReps": "10-12", "restSeconds": 120 }
+          ]
+        },
+        {
+          "exerciseId": "dumbbell-shoulder-press",
+          "name": "哑铃推肩",
+          "primaryMuscles": ["三角肌前束"],
+          "secondaryMuscles": ["肱三头肌"],
+          "sets": [
+            { "kind": "working", "plannedWeight": "10kg每只", "targetReps": "10-12", "restSeconds": 120 },
+            { "kind": "working", "plannedWeight": "10kg每只", "targetReps": "10-12", "restSeconds": 120 }
+          ]
+        },
+        {
+          "exerciseId": "goblet-squat",
+          "name": "高脚杯深蹲",
+          "primaryMuscles": ["股四头肌"],
+          "secondaryMuscles": ["臀大肌"],
+          "sets": [
+            { "kind": "working", "plannedWeight": "20kg", "targetReps": "10-12", "restSeconds": 120 },
+            { "kind": "working", "plannedWeight": "20kg", "targetReps": "10-12", "restSeconds": 120 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "strength-b",
+      "name": "力量B",
+      "focus": "下肢主导 + 上肢辅助",
+      "blocks": [
+        {
+          "exerciseId": "barbell-squat",
+          "name": "杠铃深蹲",
+          "primaryMuscles": ["股四头肌"],
+          "secondaryMuscles": ["臀大肌", "腘绳肌"],
+          "progressionHint": "顶组达到 8 次后可考虑小幅加重。",
+          "sets": [
+            { "kind": "top", "plannedWeight": "两边各10kg", "targetReps": "6-8", "restSeconds": 180 },
+            { "kind": "backoff", "plannedWeight": "两边各7.5kg", "targetReps": "8-10", "restSeconds": 120 }
+          ]
+        },
+        {
+          "exerciseId": "romanian-deadlift",
+          "name": "罗马尼亚硬拉",
+          "primaryMuscles": ["腘绳肌"],
+          "secondaryMuscles": ["臀大肌", "竖脊肌"],
+          "sets": [
+            { "kind": "working", "plannedWeight": "两边各10kg", "targetReps": "10-12", "restSeconds": 120 },
+            { "kind": "working", "plannedWeight": "两边各10kg", "targetReps": "10-12", "restSeconds": 120 }
+          ]
+        },
+        {
+          "exerciseId": "leg-press",
+          "name": "腿举",
+          "primaryMuscles": ["股四头肌"],
+          "secondaryMuscles": ["臀大肌"],
+          "notes": "控制离心收缩",
+          "sets": [
+            { "kind": "accessory", "plannedWeight": "80kg", "targetReps": "12-15", "restSeconds": 90 },
+            { "kind": "accessory", "plannedWeight": "80kg", "targetReps": "12-15", "restSeconds": 90 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "strength-c",
+      "name": "力量C",
+      "focus": "上肢综合 + 核心",
+      "blocks": [
+        {
+          "exerciseId": "dumbbell-bench",
+          "name": "哑铃卧推",
+          "primaryMuscles": ["胸大肌"],
+          "secondaryMuscles": ["肱三头肌", "三角肌前束"],
+          "sets": [
+            { "kind": "top", "plannedWeight": "17.5kg每只", "targetReps": "8-10", "restSeconds": 150 },
+            { "kind": "backoff", "plannedWeight": "15kg每只", "targetReps": "10-12", "restSeconds": 120 }
+          ]
+        },
+        {
+          "exerciseId": "seated-row",
+          "name": "坐姿划船",
+          "primaryMuscles": ["背阔肌"],
+          "secondaryMuscles": ["肱二头肌", "后三角肌"],
+          "sets": [
+            { "kind": "working", "plannedWeight": "33kg", "targetReps": "10-12", "restSeconds": 120 },
+            { "kind": "working", "plannedWeight": "33kg", "targetReps": "10-12", "restSeconds": 120 }
+          ]
+        },
+        {
+          "exerciseId": "lateral-raise",
+          "name": "侧平举",
+          "primaryMuscles": ["三角肌中束"],
+          "sets": [
+            { "kind": "accessory", "plannedWeight": "6kg每只", "targetReps": "12-15", "restSeconds": 60 },
+            { "kind": "accessory", "plannedWeight": "6kg每只", "targetReps": "12-15", "restSeconds": 60 }
+          ]
+        },
+        {
+          "exerciseId": "plank",
+          "name": "平板支撑",
+          "primaryMuscles": ["核心"],
+          "notes": "每组至力竭",
+          "sets": [
+            { "kind": "accessory", "plannedWeight": "自重", "targetReps": "至力竭", "restSeconds": 60 },
+            { "kind": "accessory", "plannedWeight": "自重", "targetReps": "至力竭", "restSeconds": 60 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cardio",
+      "name": "有氧",
+      "focus": "低强度稳态有氧",
+      "blocks": [
+        {
+          "exerciseId": "treadmill-incline",
+          "name": "爬坡跑步机",
+          "notes": "坡度10-12，速度4-5km/h",
+          "sets": [
+            { "kind": "cardio", "plannedWeight": "心率130-140", "targetReps": "30-45分钟", "restSeconds": 0 }
+          ]
+        }
+      ]
+    }
+  ]
+}
