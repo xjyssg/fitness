@@ -75,11 +75,13 @@ export default function App() {
     }
   }, []);
 
-  const handleStartWorkout = useCallback((workoutState: WorkoutState) => {
+  const handleStartWorkout = useCallback(async (workoutState: WorkoutState) => {
+    await deleteIncompleteWorkout(); // 开始新训练前清理旧残留
     setState(s => ({ ...s, screen: 'workout', workoutState }));
   }, []);
 
-  const handleStartCardio = useCallback((workoutState: WorkoutState) => {
+  const handleStartCardio = useCallback(async (workoutState: WorkoutState) => {
+    await deleteIncompleteWorkout();
     setState(s => ({ ...s, screen: 'cardio', workoutState }));
   }, []);
 
