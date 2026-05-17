@@ -10,14 +10,15 @@ function escapeCSVField(value: string | number): string {
 
 const SET_LOG_HEADERS = [
   'sessionId', 'dayId', 'dayName', 'exerciseId', 'exerciseName',
-  'setIndex', 'setKind', 'plannedWeight', 'targetReps', 'actualReps',
+  'setIndex', 'setKind', 'plannedWeight', 'actualWeight', 'targetReps', 'actualReps',
   'plannedRestSeconds', 'actualRestSeconds', 'completedAt',
 ];
 
 function setLogToCSVRow(log: SetLog): string {
   return [
     log.sessionId, log.dayId, log.dayName, log.exerciseId, log.exerciseName,
-    log.setIndex, log.setKind, log.plannedWeight, log.targetReps, log.actualReps,
+    log.setIndex, log.setKind, log.plannedWeight, log.actualWeight,
+    log.targetReps, log.actualReps,
     log.plannedRestSeconds, log.actualRestSeconds, log.completedAt,
   ].map(escapeCSVField).join(',');
 }

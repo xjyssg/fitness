@@ -89,7 +89,7 @@ export function selectBlock(state: WorkoutState, blockIndex: number, optionExerc
   };
 }
 
-export function completeSet(state: WorkoutState, actualReps: number): WorkoutState {
+export function completeSet(state: WorkoutState, actualReps: number, actualWeight?: string): WorkoutState {
   const current = state.flatSets[state.currentFlatIndex];
   const now = new Date();
 
@@ -102,6 +102,7 @@ export function completeSet(state: WorkoutState, actualReps: number): WorkoutSta
     setIndex: current.setIndex + 1,
     setKind: current.set.kind,
     plannedWeight: current.set.plannedWeight,
+    actualWeight: actualWeight || current.set.plannedWeight,
     targetReps: current.set.targetReps,
     actualReps,
     plannedRestSeconds: current.set.restSeconds,

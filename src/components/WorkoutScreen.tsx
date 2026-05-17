@@ -17,6 +17,7 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
   const [restSeconds, setRestSeconds] = useState(0);
   const [restComplete, setRestComplete] = useState(false);
   const [repInput, setRepInput] = useState('');
+  const [weightInput, setWeightInput] = useState('');
   const [repError, setRepError] = useState(false);
   const [editingSetIndex, setEditingSetIndex] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -28,6 +29,13 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
   const isLastSetInBlock = workoutState.currentFlatIndex >= workoutState.flatSets.length - 1;
   const isLastBlock = workoutState.remainingBlockIndices.length === 1;
   const isLastSet = isLastSetInBlock && isLastBlock;
+
+  // 当前组切换时预填计划重量
+  useEffect(() => {
+    if (current) {
+      setWeightInput(current.set.plannedWeight);
+    }
+  }, [workoutState.currentBlockIndex, workoutState.currentFlatIndex]);
 
   // 倒计时显示
   useEffect(() => {
@@ -85,7 +93,7 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
       return;
     }
     setRepError(false);
-    const next = completeSet(workoutState, repsNum);
+    const next = completeSet(workoutState, repsNum, weightInput || current?.set.plannedWeight);
     onUpdateState(next);
     setRepInput('');
 
@@ -246,25 +254,43 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
           </div>
 
           <div style={{ marginTop: 20, textAlign: 'center' }}>
-            <div style={{ marginTop: 12, marginBottom: 12 }}>
-              <label style={{ fontSize: '14px', color: '#aaa' }}>实际次数</label>
-              <input
-                ref={repInputRef}
-                type="number"
-                inputMode="numeric"
-                value={repInput}
-                onChange={e => { setRepInput(e.target.value); setRepError(false); }}
-                placeholder="输入实际次数"
-                style={{
-                  ...inputStyle,
-                  borderColor: repError ? '#e94560' : '#333',
-                  marginBottom: 4,
-                }}
-              />
-              {repError && (
-                <div style={{ color: '#e94560', fontSize: '13px' }}>请填写实际次数</div>
-              )}
+            <div style={{ marginTop: 12, marginBottom: 12, display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <div>
+                <label style={{ fontSize: '14px', color: '#aaa' }}>实际重量</label>
+                <input
+                  type="text"
+                  value={weightInput}
+                  onChange={e => setWeightInput(e.target.value)}
+                  placeholder="输入实际重量"
+                  style={{
+                    ...inputStyle,
+                    maxWidth: 140,
+                    marginTop: 4,
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '14px', color: '#aaa' }}>实际次数</label>
+                <input
+                  ref={repInputRef}
+                  type="number"
+                  inputMode="numeric"
+                  value={repInput}
+                  onChange={e => { setRepInput(e.target.value); setRepError(false); }}
+                  placeholder="输入实际次数"
+                  style={{
+                    ...inputStyle,
+                    borderColor: repError ? '#e94560' : '#333',
+                    maxWidth: 100,
+                    marginTop: 4,
+                    marginBottom: 4,
+                  }}
+                />
+              </div>
             </div>
+            {repError && (
+              <div style={{ color: '#e94560', fontSize: '13px' }}>请填写实际次数</div>
+            )}
             <button onClick={handleCompleteSet} style={btnPrimary}>
               {isLastSet ? '完成训练' : '完成本组'}
             </button>
@@ -289,25 +315,43 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
             </div>
           )}
 
-          <div style={{ marginTop: 24 }}>
-            <label style={{ fontSize: '14px', color: '#aaa' }}>实际次数</label>
-            <input
-              ref={repInputRef}
-              type="number"
-              inputMode="numeric"
-              value={repInput}
-              onChange={e => { setRepInput(e.target.value); setRepError(false); }}
-              placeholder="输入实际次数"
-              style={{
-                ...inputStyle,
-                borderColor: repError ? '#e94560' : '#333',
-                marginBottom: 4,
-              }}
-            />
-            {repError && (
-              <div style={{ color: '#e94560', fontSize: '13px' }}>请填写实际次数</div>
-            )}
+          <div style={{ marginTop: 24, display: 'flex', gap: 12, justifyContent: 'center' }}>
+            <div>
+              <label style={{ fontSize: '14px', color: '#aaa' }}>实际重量</label>
+              <input
+                type="text"
+                value={weightInput}
+                onChange={e => setWeightInput(e.target.value)}
+                placeholder="输入实际重量"
+                style={{
+                  ...inputStyle,
+                  maxWidth: 140,
+                  marginTop: 4,
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '14px', color: '#aaa' }}>实际次数</label>
+              <input
+                ref={repInputRef}
+                type="number"
+                inputMode="numeric"
+                value={repInput}
+                onChange={e => { setRepInput(e.target.value); setRepError(false); }}
+                placeholder="输入实际次数"
+                style={{
+                  ...inputStyle,
+                  borderColor: repError ? '#e94560' : '#333',
+                  maxWidth: 100,
+                  marginTop: 4,
+                  marginBottom: 4,
+                }}
+              />
+            </div>
           </div>
+          {repError && (
+            <div style={{ color: '#e94560', fontSize: '13px', textAlign: 'center' }}>请填写实际次数</div>
+          )}
         </div>
       )}
 

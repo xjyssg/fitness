@@ -5,7 +5,7 @@ import type { WorkoutSession, SetLog } from '../types';
 function makeTopLog(exerciseId: string, exerciseName: string, targetReps: string, actualReps: number): SetLog {
   return {
     sessionId: 's1', dayId: 'a', dayName: 'A', exerciseId, exerciseName,
-    setIndex: 1, setKind: 'top', plannedWeight: '10kg', targetReps,
+    setIndex: 1, setKind: 'top', plannedWeight: '10kg', actualWeight: '10kg', targetReps,
     actualReps, plannedRestSeconds: 180, actualRestSeconds: 170,
     completedAt: '2026-05-17T10:00:00+08:00',
   };

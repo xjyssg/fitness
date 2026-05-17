@@ -52,6 +52,7 @@ export interface SetLog {
   setIndex: number;
   setKind: SetKind;
   plannedWeight: string;
+  actualWeight: string;
   targetReps: string;
   actualReps: number;
   plannedRestSeconds: number;

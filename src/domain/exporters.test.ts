@@ -23,6 +23,7 @@ const strengthSession: WorkoutSession = {
       setIndex: 1,
       setKind: 'top',
       plannedWeight: '两边各7.5kg',
+      actualWeight: '两边各7.5kg',
       targetReps: '6-8',
       actualReps: 8,
       plannedRestSeconds: 180,
