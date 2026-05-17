@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { WorkoutState, WorkoutSession } from '../types';
 import {
   completeSet, startNextSet, getRemainingRestSeconds,
   updateActualReps, SET_KIND_LABELS,
 } from '../domain/workoutRunner';
 import { saveIncompleteWorkout } from '../storage/db';
-import { notifyRestComplete, vibrate } from '../reminders/reminder';
+import { playBeep } from '../reminders/reminder';
 
 interface Props {
   workoutState: WorkoutState;
@@ -15,31 +15,29 @@ interface Props {
 
 export default function WorkoutScreen({ workoutState, onUpdateState, onComplete }: Props) {
   const [restSeconds, setRestSeconds] = useState(0);
-  const [restNotified, setRestNotified] = useState(false);
+  const [restComplete, setRestComplete] = useState(false);
   const [repInput, setRepInput] = useState('');
   const [repError, setRepError] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [editingSetIndex, setEditingSetIndex] = useState<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const vibrateRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const repInputRef = useRef<HTMLInputElement>(null);
 
   const current = workoutState.flatSets[workoutState.currentFlatIndex];
   const isLastSet = workoutState.currentFlatIndex >= workoutState.flatSets.length - 1;
 
+  // 倒计时显示（仅 UI，不触发震动）
   useEffect(() => {
     if (workoutState.phase === 'rest') {
-      setRestNotified(false);
+      setRestComplete(false);
       setRestSeconds(getRemainingRestSeconds(workoutState));
 
       timerRef.current = setInterval(() => {
         const remaining = getRemainingRestSeconds(workoutState);
         setRestSeconds(remaining);
-
         if (remaining <= 0) {
           if (timerRef.current) clearInterval(timerRef.current);
-          if (!restNotified) {
-            setRestNotified(true);
-            notifyRestComplete();
-          }
+          setRestComplete(true);
         }
       }, 200);
 
@@ -49,11 +47,19 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
     }
   }, [workoutState.phase, workoutState.restEndsAt]);
 
+  // 自动保存未完成训练
   useEffect(() => {
     saveIncompleteWorkout(workoutState);
   }, [workoutState]);
 
-  const handleCompleteSet = () => {
+  // 清理震动定时器
+  useEffect(() => {
+    return () => {
+      if (vibrateRef.current) clearTimeout(vibrateRef.current);
+    };
+  }, []);
+
+  const handleCompleteSet = useCallback(() => {
     const repsNum = parseInt(repInput, 10);
     if (!repInput.trim() || isNaN(repsNum) || repsNum <= 0) {
       setRepError(true);
@@ -67,10 +73,22 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
 
     if (next.phase === 'completed') {
       onComplete(next.session);
+      return;
     }
-  };
 
-  const handleNextSet = () => {
+    // 在用户点击事件的回调中直接用 setTimeout 预定震动，浏览器保留用户手势授权
+    const restMs = current.set.restSeconds * 1000;
+    if (vibrateRef.current) clearTimeout(vibrateRef.current);
+    vibrateRef.current = setTimeout(() => {
+      try {
+        navigator.vibrate?.([300, 150, 300]);
+      } catch { /* 震动不可用时静默跳过 */ }
+      // 同时播放声音
+      playBeep();
+    }, restMs);
+  }, [repInput, workoutState, current, onUpdateState, onComplete]);
+
+  const handleNextSet = useCallback(() => {
     const repsNum = parseInt(repInput, 10);
     if (!repInput.trim() || isNaN(repsNum) || repsNum <= 0) {
       setRepError(true);
@@ -79,8 +97,8 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
     }
     setRepError(false);
 
-    // 震动在用户点击时触发，解决浏览器要求用户手势的限制
-    vibrate();
+    // 清除上一次的震动定时器
+    if (vibrateRef.current) clearTimeout(vibrateRef.current);
 
     // 先将用户修正的次数写入最后一组记录
     const lastLogIndex = workoutState.completedSetLogs.length - 1;
@@ -88,7 +106,7 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
     const next = startNextSet(withUpdatedReps);
     onUpdateState(next);
     setRepInput('');
-  };
+  }, [repInput, workoutState, onUpdateState]);
 
   const handleUpdateReps = (index: number, newReps: number) => {
     if (isNaN(newReps) || newReps <= 0) return;
@@ -178,7 +196,7 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
             {restSeconds > 0 ? '剩余休息时间' : '休息完成'}
           </div>
 
-          {restSeconds <= 0 && (
+          {restComplete && (
             <div style={{ marginTop: 20 }}>
               <button onClick={handleNextSet} style={btnPrimary}>
                 开始下一组
