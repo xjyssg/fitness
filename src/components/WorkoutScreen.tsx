@@ -82,7 +82,10 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
     // 震动在用户点击时触发，解决浏览器要求用户手势的限制
     vibrate();
 
-    const next = startNextSet(workoutState);
+    // 先将用户修正的次数写入最后一组记录
+    const lastLogIndex = workoutState.completedSetLogs.length - 1;
+    const withUpdatedReps = updateActualReps(workoutState, lastLogIndex, repsNum);
+    const next = startNextSet(withUpdatedReps);
     onUpdateState(next);
     setRepInput('');
   };
