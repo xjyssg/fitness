@@ -5,7 +5,7 @@ import {
   updateActualReps, SET_KIND_LABELS,
 } from '../domain/workoutRunner';
 import { saveIncompleteWorkout } from '../storage/db';
-import { notifyRestComplete } from '../reminders/reminder';
+import { notifyRestComplete, vibrate } from '../reminders/reminder';
 
 interface Props {
   workoutState: WorkoutState;
@@ -17,8 +17,10 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
   const [restSeconds, setRestSeconds] = useState(0);
   const [restNotified, setRestNotified] = useState(false);
   const [repInput, setRepInput] = useState('');
+  const [repError, setRepError] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [editingSetIndex, setEditingSetIndex] = useState<number | null>(null);
+  const repInputRef = useRef<HTMLInputElement>(null);
 
   const current = workoutState.flatSets[workoutState.currentFlatIndex];
   const isLastSet = workoutState.currentFlatIndex >= workoutState.flatSets.length - 1;
@@ -52,8 +54,14 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
   }, [workoutState]);
 
   const handleCompleteSet = () => {
-    const reps = parseInt(repInput, 10) || 0;
-    const next = completeSet(workoutState, reps);
+    const repsNum = parseInt(repInput, 10);
+    if (!repInput.trim() || isNaN(repsNum) || repsNum <= 0) {
+      setRepError(true);
+      repInputRef.current?.focus();
+      return;
+    }
+    setRepError(false);
+    const next = completeSet(workoutState, repsNum);
     onUpdateState(next);
     setRepInput('');
 
@@ -63,12 +71,24 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
   };
 
   const handleNextSet = () => {
+    const repsNum = parseInt(repInput, 10);
+    if (!repInput.trim() || isNaN(repsNum) || repsNum <= 0) {
+      setRepError(true);
+      repInputRef.current?.focus();
+      return;
+    }
+    setRepError(false);
+
+    // 震动在用户点击时触发，解决浏览器要求用户手势的限制
+    vibrate();
+
     const next = startNextSet(workoutState);
     onUpdateState(next);
     setRepInput('');
   };
 
   const handleUpdateReps = (index: number, newReps: number) => {
+    if (isNaN(newReps) || newReps <= 0) return;
     const next = updateActualReps(workoutState, index, newReps);
     onUpdateState(next);
     setEditingSetIndex(null);
@@ -120,6 +140,25 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
           </div>
 
           <div style={{ marginTop: 20, textAlign: 'center' }}>
+            <div style={{ marginTop: 12, marginBottom: 12 }}>
+              <label style={{ fontSize: '14px', color: '#aaa' }}>实际次数</label>
+              <input
+                ref={repInputRef}
+                type="number"
+                inputMode="numeric"
+                value={repInput}
+                onChange={e => { setRepInput(e.target.value); setRepError(false); }}
+                placeholder="输入实际次数"
+                style={{
+                  ...inputStyle,
+                  borderColor: repError ? '#e94560' : '#333',
+                  marginBottom: 4,
+                }}
+              />
+              {repError && (
+                <div style={{ color: '#e94560', fontSize: '13px' }}>请填写实际次数</div>
+              )}
+            </div>
             <button onClick={handleCompleteSet} style={btnPrimary}>
               {isLastSet ? '完成训练' : '完成本组'}
             </button>
@@ -147,13 +186,21 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
           <div style={{ marginTop: 24 }}>
             <label style={{ fontSize: '14px', color: '#aaa' }}>实际次数</label>
             <input
+              ref={repInputRef}
               type="number"
               inputMode="numeric"
               value={repInput}
-              onChange={e => setRepInput(e.target.value)}
+              onChange={e => { setRepInput(e.target.value); setRepError(false); }}
               placeholder="输入实际次数"
-              style={inputStyle}
+              style={{
+                ...inputStyle,
+                borderColor: repError ? '#e94560' : '#333',
+                marginBottom: 4,
+              }}
             />
+            {repError && (
+              <div style={{ color: '#e94560', fontSize: '13px' }}>请填写实际次数</div>
+            )}
           </div>
         </div>
       )}
