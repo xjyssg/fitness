@@ -19,11 +19,20 @@ export interface ExerciseBlock {
   sets: TrainingSet[];
 }
 
+export interface OptionBlock {
+  kind: 'option';
+  id: string;
+  name: string;
+  options: ExerciseBlock[];
+}
+
+export type Block = ExerciseBlock | OptionBlock;
+
 export interface TrainingDay {
   id: string;
   name: string;
   focus?: string;
-  blocks: ExerciseBlock[];
+  blocks: Block[];
 }
 
 export interface TrainingPlan {
@@ -89,17 +98,21 @@ export interface FlatSet {
 
 export interface WorkoutState {
   session: WorkoutSession;
+  allBlocks: Block[];
+  currentBlockIndex: number | null;
   flatSets: FlatSet[];
   currentFlatIndex: number;
+  remainingBlockIndices: number[];
   phase: WorkoutPhase;
   restStartedAt: string | null;
   restEndsAt: string | null;
   completedSetLogs: SetLog[];
+  selectedExerciseIds: Record<number, string>;
 }
 
 // ========== UI 状态 ==========
 
-export type Screen = 'home' | 'workout' | 'cardio' | 'summary' | 'history';
+export type Screen = 'home' | 'workout' | 'cardio' | 'summary' | 'history' | 'editor';
 
 export interface AppState {
   screen: Screen;

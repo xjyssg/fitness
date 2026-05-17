@@ -1,6 +1,6 @@
 import type {
   TrainingDay, TrainingPlan, WorkoutSession, WorkoutState,
-  FlatSet, SetLog, WorkoutPhase,
+  FlatSet, SetLog, WorkoutPhase, Block, ExerciseBlock,
 } from '../types';
 
 export const SET_KIND_LABELS: Record<string, string> = {
@@ -22,13 +22,11 @@ function generateSessionId(dayId: string): string {
   return `${dayId}-${iso}${tz}`;
 }
 
-export function flattenSets(day: TrainingDay): FlatSet[] {
+export function flattenSets(block: Block, blockIndex: number): FlatSet[] {
+  const exBlock = block as ExerciseBlock;
   const result: FlatSet[] = [];
-  for (let bi = 0; bi < day.blocks.length; bi++) {
-    const block = day.blocks[bi];
-    for (let si = 0; si < block.sets.length; si++) {
-      result.push({ blockIndex: bi, setIndex: si, block, set: block.sets[si] });
-    }
+  for (let si = 0; si < exBlock.sets.length; si++) {
+    result.push({ blockIndex, setIndex: si, block: exBlock, set: exBlock.sets[si] });
   }
   return result;
 }
@@ -44,16 +42,50 @@ export function startWorkout(plan: TrainingPlan, day: TrainingDay): WorkoutState
     focus: day.focus,
     startedAt: new Date().toISOString(),
   };
-  const flatSets = flattenSets(day);
+  const allBlockIndices = day.blocks.map((_, i) => i);
 
   return {
     session,
-    flatSets,
+    allBlocks: day.blocks,
+    currentBlockIndex: null,
+    flatSets: [],
     currentFlatIndex: 0,
+    remainingBlockIndices: allBlockIndices,
     phase: 'active' as WorkoutPhase,
     restStartedAt: null,
     restEndsAt: null,
     completedSetLogs: [],
+    selectedExerciseIds: {},
+  };
+}
+
+export function resolveBlock(block: Block, optionExerciseId?: string): ExerciseBlock {
+  if ('options' in block) {
+    const selected = optionExerciseId
+      ? block.options.find(o => o.exerciseId === optionExerciseId)
+      : undefined;
+    return selected || block.options[0];
+  }
+  return block;
+}
+
+export function selectBlock(state: WorkoutState, blockIndex: number, optionExerciseId?: string): WorkoutState {
+  if (state.currentBlockIndex !== null) return state;
+
+  const block = state.allBlocks[blockIndex];
+  const resolved = resolveBlock(block, optionExerciseId);
+
+  const selectedExerciseIds = { ...state.selectedExerciseIds };
+  if ('options' in block) {
+    selectedExerciseIds[blockIndex] = resolved.exerciseId;
+  }
+
+  return {
+    ...state,
+    currentBlockIndex: blockIndex,
+    flatSets: flattenSets(resolved, blockIndex),
+    currentFlatIndex: 0,
+    selectedExerciseIds,
   };
 }
 
@@ -77,7 +109,9 @@ export function completeSet(state: WorkoutState, actualReps: number): WorkoutSta
     completedAt: now.toISOString(),
   };
 
-  const isLastSet = state.currentFlatIndex >= state.flatSets.length - 1;
+  const isLastSetInBlock = state.currentFlatIndex >= state.flatSets.length - 1;
+  const isLastBlock = state.remainingBlockIndices.length === 1;
+  const isLastSet = isLastSetInBlock && isLastBlock;
   const completedSetLogs = [...state.completedSetLogs, setLog];
 
   if (isLastSet) {
@@ -122,6 +156,25 @@ export function startNextSet(state: WorkoutState): WorkoutState {
       ? { ...log, actualRestSeconds }
       : log
   );
+
+  const isLastSetInBlock = state.currentFlatIndex >= state.flatSets.length - 1;
+
+  if (isLastSetInBlock) {
+    const remainingBlockIndices = state.remainingBlockIndices.filter(
+      i => i !== state.currentBlockIndex
+    );
+    return {
+      ...state,
+      currentBlockIndex: null,
+      flatSets: [],
+      currentFlatIndex: 0,
+      remainingBlockIndices,
+      phase: 'active',
+      restStartedAt: null,
+      restEndsAt: null,
+      completedSetLogs: updatedSetLogs,
+    };
+  }
 
   return {
     ...state,

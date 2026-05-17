@@ -10,11 +10,12 @@ interface Props {
   onStartWorkout: (state: WorkoutState) => void;
   onStartCardio: (state: WorkoutState) => void;
   onGoHistory: () => void;
+  onGoEditor: () => void;
 }
 
 export default function HomeScreen({
   plan, sessions, onImportPlan, onLoadSamplePlan,
-  onStartWorkout, onStartCardio, onGoHistory,
+  onStartWorkout, onStartCardio, onGoHistory, onGoEditor,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -32,7 +33,8 @@ export default function HomeScreen({
   const handleDayClick = (day: TrainingPlan['days'][0]) => {
     if (!plan) return;
     const state = startWorkout(plan, day);
-    const isCardio = day.blocks.length === 1 && day.blocks[0].sets.every(s => s.kind === 'cardio');
+    const firstBlock = day.blocks[0];
+    const isCardio = day.blocks.length === 1 && !('options' in firstBlock) && firstBlock.sets.every(s => s.kind === 'cardio');
     if (isCardio) {
       onStartCardio(state);
     } else {
@@ -110,6 +112,9 @@ export default function HomeScreen({
           <div style={{ marginTop: 16, display: 'flex', gap: 8 }}>
             <button onClick={onGoHistory} style={btnSecondary}>
               训练历史
+            </button>
+            <button onClick={onGoEditor} style={btnSecondary}>
+              编辑计划
             </button>
             <button onClick={() => fileRef.current?.click()} style={btnSecondary}>
               导入新计划

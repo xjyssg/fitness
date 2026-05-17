@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import type { WorkoutState, WorkoutSession } from '../types';
+import type { WorkoutState, WorkoutSession, Block, ExerciseBlock } from '../types';
 import {
-  completeSet, startNextSet, getRemainingRestSeconds,
+  selectBlock, completeSet, startNextSet, getRemainingRestSeconds,
   updateActualReps, SET_KIND_LABELS,
 } from '../domain/workoutRunner';
 import { saveIncompleteWorkout } from '../storage/db';
@@ -22,11 +22,14 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const vibrateRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const repInputRef = useRef<HTMLInputElement>(null);
+  const [optionBlockIndex, setOptionBlockIndex] = useState<number | null>(null);
 
   const current = workoutState.flatSets[workoutState.currentFlatIndex];
-  const isLastSet = workoutState.currentFlatIndex >= workoutState.flatSets.length - 1;
+  const isLastSetInBlock = workoutState.currentFlatIndex >= workoutState.flatSets.length - 1;
+  const isLastBlock = workoutState.remainingBlockIndices.length === 1;
+  const isLastSet = isLastSetInBlock && isLastBlock;
 
-  // 倒计时显示（仅 UI，不触发震动）
+  // 倒计时显示
   useEffect(() => {
     if (workoutState.phase === 'rest') {
       setRestComplete(false);
@@ -47,17 +50,32 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
     }
   }, [workoutState.phase, workoutState.restEndsAt]);
 
-  // 自动保存未完成训练
   useEffect(() => {
     saveIncompleteWorkout(workoutState);
   }, [workoutState]);
 
-  // 清理震动定时器
   useEffect(() => {
     return () => {
       if (vibrateRef.current) clearTimeout(vibrateRef.current);
     };
   }, []);
+
+  const handleBlockSelect = useCallback((blockIndex: number) => {
+    const block = workoutState.allBlocks[blockIndex];
+    if ('options' in block) {
+      setOptionBlockIndex(blockIndex);
+      return;
+    }
+    const next = selectBlock(workoutState, blockIndex);
+    onUpdateState(next);
+  }, [workoutState, onUpdateState]);
+
+  const handleOptionSelect = useCallback((exerciseId: string) => {
+    if (optionBlockIndex === null) return;
+    const next = selectBlock(workoutState, optionBlockIndex, exerciseId);
+    onUpdateState(next);
+    setOptionBlockIndex(null);
+  }, [workoutState, optionBlockIndex, onUpdateState]);
 
   const handleCompleteSet = useCallback(() => {
     const repsNum = parseInt(repInput, 10);
@@ -76,14 +94,10 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
       return;
     }
 
-    // 在用户点击事件的回调中直接用 setTimeout 预定震动，浏览器保留用户手势授权
-    const restMs = current.set.restSeconds * 1000;
+    const restMs = (current?.set.restSeconds || 60) * 1000;
     if (vibrateRef.current) clearTimeout(vibrateRef.current);
     vibrateRef.current = setTimeout(() => {
-      try {
-        navigator.vibrate?.([300, 150, 300]);
-      } catch { /* 震动不可用时静默跳过 */ }
-      // 同时播放声音
+      try { navigator.vibrate?.([300, 150, 300]); } catch {}
       playBeep();
     }, restMs);
   }, [repInput, workoutState, current, onUpdateState, onComplete]);
@@ -97,10 +111,8 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
     }
     setRepError(false);
 
-    // 清除上一次的震动定时器
     if (vibrateRef.current) clearTimeout(vibrateRef.current);
 
-    // 先将用户修正的次数写入最后一组记录
     const lastLogIndex = workoutState.completedSetLogs.length - 1;
     const withUpdatedReps = updateActualReps(workoutState, lastLogIndex, repsNum);
     const next = startNextSet(withUpdatedReps);
@@ -115,13 +127,92 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
     setEditingSetIndex(null);
   };
 
+  // ===== 待选择模式 =====
+  if (workoutState.currentBlockIndex === null && workoutState.phase !== 'completed') {
+    const remaining = workoutState.remainingBlockIndices.map(i => workoutState.allBlocks[i]);
+    return (
+      <div>
+        <div style={{ fontSize: '18px', fontWeight: 600, textAlign: 'center', marginBottom: 16 }}>
+          {workoutState.session.dayName}
+        </div>
+        <div style={{ fontSize: '14px', color: '#aaa', marginBottom: 12, textAlign: 'center' }}>
+          选择下一个动作
+        </div>
+        {remaining.map((block, idx) => {
+          const origIdx = workoutState.remainingBlockIndices[idx];
+          const name = 'options' in block ? block.name : block.name;
+          const firstSet = 'options' in block ? block.options[0].sets[0] : block.sets[0];
+          return (
+            <button
+              key={origIdx}
+              onClick={() => handleBlockSelect(origIdx)}
+              style={blockCardStyle}
+            >
+              <div style={{ fontSize: '16px', fontWeight: 600 }}>{name}</div>
+              <div style={{ fontSize: '12px', color: '#888', marginTop: 4 }}>
+                {'options' in block
+                  ? `${block.options.length} 个备选 · ${block.options[0].sets.length} 组`
+                  : `${block.sets.length} 组 · ${SET_KIND_LABELS[firstSet.kind] || firstSet.kind}`
+                }
+              </div>
+            </button>
+          );
+        })}
+
+        {workoutState.completedSetLogs.length > 0 && (
+          <CompletedSets
+            logs={workoutState.completedSetLogs}
+            editingIndex={editingSetIndex}
+            onEdit={setEditingSetIndex}
+            onUpdate={handleUpdateReps}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // ===== 备选动作选择器 =====
+  if (optionBlockIndex !== null) {
+    const block = workoutState.allBlocks[optionBlockIndex] as Extract<Block, { options: ExerciseBlock[] }>;
+    return (
+      <div>
+        <div style={{ fontSize: '18px', fontWeight: 600, textAlign: 'center', marginBottom: 16 }}>
+          {block.name}
+        </div>
+        <div style={{ fontSize: '14px', color: '#aaa', marginBottom: 12, textAlign: 'center' }}>
+          选择执行动作
+        </div>
+        {block.options.map(opt => (
+          <button
+            key={opt.exerciseId}
+            onClick={() => handleOptionSelect(opt.exerciseId)}
+            style={blockCardStyle}
+          >
+            <div style={{ fontSize: '16px', fontWeight: 600 }}>{opt.name}</div>
+            <div style={{ fontSize: '12px', color: '#888', marginTop: 4 }}>
+              {opt.sets.length} 组 · {opt.sets[0].plannedWeight} · {opt.sets[0].targetReps}次
+            </div>
+            {opt.primaryMuscles && (
+              <div style={{ marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {opt.primaryMuscles.map(m => (
+                  <span key={m} style={muscleTagStyle}>{m}</span>
+                ))}
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  // ===== 正常执行模式 =====
   return (
     <div>
       <div style={{ fontSize: '18px', fontWeight: 600, textAlign: 'center', marginBottom: 4 }}>
         {workoutState.session.dayName}
       </div>
 
-      {workoutState.phase === 'active' && (
+      {workoutState.phase === 'active' && current && (
         <>
           <div style={{
             background: '#16213e', borderRadius: 12, padding: 20, marginTop: 16,
@@ -130,7 +221,7 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
             <div style={{ fontSize: '22px', fontWeight: 700, marginTop: 4 }}>{current.block.name}</div>
 
             <div style={{ display: 'flex', gap: 16, marginTop: 12, flexWrap: 'wrap' }}>
-              <Tag label="组别" value={`第 ${current.setIndex + 1} 组`} />
+              <Tag label="组别" value={`第 ${current.setIndex + 1} 组 / 共 ${workoutState.flatSets.length} 组`} />
               <Tag label="类型" value={SET_KIND_LABELS[current.set.kind] || current.set.kind} />
               <Tag label="重量" value={current.set.plannedWeight} />
               <Tag label="目标" value={`${current.set.targetReps} 次`} />
@@ -139,16 +230,10 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
             {current.block.primaryMuscles && current.block.primaryMuscles.length > 0 && (
               <div style={{ marginTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {current.block.primaryMuscles.map(m => (
-                  <span key={m} style={{
-                    background: '#e94560', color: '#fff', padding: '2px 8px',
-                    borderRadius: 4, fontSize: '12px',
-                  }}>{m}</span>
+                  <span key={m} style={muscleTagPrimaryStyle}>{m}</span>
                 ))}
                 {current.block.secondaryMuscles?.map(m => (
-                  <span key={m} style={{
-                    background: '#0f3460', color: '#ccc', padding: '2px 8px',
-                    borderRadius: 4, fontSize: '12px',
-                  }}>{m}</span>
+                  <span key={m} style={muscleTagSecondaryStyle}>{m}</span>
                 ))}
               </div>
             )}
@@ -199,7 +284,7 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
           {restComplete && (
             <div style={{ marginTop: 20 }}>
               <button onClick={handleNextSet} style={btnPrimary}>
-                开始下一组
+                {isLastSetInBlock ? '选择下一个动作' : '开始下一组'}
               </button>
             </div>
           )}
@@ -227,48 +312,66 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
       )}
 
       {workoutState.completedSetLogs.length > 0 && (
-        <div style={{ marginTop: 24 }}>
-          <div style={{ fontSize: '14px', color: '#aaa', marginBottom: 8 }}>已完成组</div>
-          {workoutState.completedSetLogs.map((log, i) => (
-            <div key={i} style={{
-              background: '#16213e', borderRadius: 8, padding: '8px 12px',
-              marginBottom: 6, display: 'flex', justifyContent: 'space-between',
-              alignItems: 'center',
-            }}>
-              <div>
-                <span style={{ fontSize: '13px' }}>{log.exerciseName}</span>
-                <span style={{ fontSize: '12px', color: '#888', marginLeft: 8 }}>
-                  第{log.setIndex}组 · {SET_KIND_LABELS[log.setKind]}
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {editingSetIndex === i ? (
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    defaultValue={log.actualReps}
-                    style={{ ...inputStyle, width: 60, padding: '4px 8px' }}
-                    onBlur={e => handleUpdateReps(i, parseInt(e.target.value, 10) || 0)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        handleUpdateReps(i, parseInt((e.target as HTMLInputElement).value, 10) || 0);
-                      }
-                    }}
-                    autoFocus
-                  />
-                ) : (
-                  <span
-                    style={{ fontSize: '14px', color: '#e94560', cursor: 'pointer' }}
-                    onClick={() => setEditingSetIndex(i)}
-                  >
-                    {log.actualReps}次
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+        <CompletedSets
+          logs={workoutState.completedSetLogs}
+          editingIndex={editingSetIndex}
+          onEdit={setEditingSetIndex}
+          onUpdate={handleUpdateReps}
+        />
       )}
+    </div>
+  );
+}
+
+function CompletedSets({
+  logs, editingIndex, onEdit, onUpdate,
+}: {
+  logs: import('../types').SetLog[];
+  editingIndex: number | null;
+  onEdit: (i: number) => void;
+  onUpdate: (i: number, reps: number) => void;
+}) {
+  return (
+    <div style={{ marginTop: 24 }}>
+      <div style={{ fontSize: '14px', color: '#aaa', marginBottom: 8 }}>已完成组</div>
+      {logs.map((log, i) => (
+        <div key={i} style={{
+          background: '#16213e', borderRadius: 8, padding: '8px 12px',
+          marginBottom: 6, display: 'flex', justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <div>
+            <span style={{ fontSize: '13px' }}>{log.exerciseName}</span>
+            <span style={{ fontSize: '12px', color: '#888', marginLeft: 8 }}>
+              第{log.setIndex}组 · {SET_KIND_LABELS[log.setKind]}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {editingIndex === i ? (
+              <input
+                type="number"
+                inputMode="numeric"
+                defaultValue={log.actualReps}
+                style={{ ...inputStyle, width: 60, padding: '4px 8px' }}
+                onBlur={e => onUpdate(i, parseInt(e.target.value, 10) || 0)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    onUpdate(i, parseInt((e.target as HTMLInputElement).value, 10) || 0);
+                  }
+                }}
+                autoFocus
+              />
+            ) : (
+              <span
+                style={{ fontSize: '14px', color: '#e94560', cursor: 'pointer' }}
+                onClick={() => onEdit(i)}
+              >
+                {log.actualReps}次
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -281,6 +384,33 @@ function Tag({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+const blockCardStyle: React.CSSProperties = {
+  display: 'block',
+  width: '100%',
+  background: '#16213e',
+  color: '#e0e0e0',
+  padding: '14px 16px',
+  borderRadius: 10,
+  marginBottom: 8,
+  textAlign: 'left',
+  border: '1px solid #1e3a5f',
+};
+
+const muscleTagStyle: React.CSSProperties = {
+  background: '#0f3460', color: '#ccc', padding: '2px 8px',
+  borderRadius: 4, fontSize: '12px',
+};
+
+const muscleTagPrimaryStyle: React.CSSProperties = {
+  background: '#e94560', color: '#fff', padding: '2px 8px',
+  borderRadius: 4, fontSize: '12px',
+};
+
+const muscleTagSecondaryStyle: React.CSSProperties = {
+  background: '#0f3460', color: '#ccc', padding: '2px 8px',
+  borderRadius: 4, fontSize: '12px',
+};
 
 const btnPrimary: React.CSSProperties = {
   background: '#e94560',

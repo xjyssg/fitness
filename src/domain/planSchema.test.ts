@@ -49,16 +49,12 @@ describe('validatePlan', () => {
   it('rejects invalid set kind', () => {
     const plan = {
       ...validPlan,
-      days: [
-        {
-          id: 'a', name: 'A', blocks: [
-            {
-              exerciseId: 'e1', name: 'E1',
-              sets: [{ kind: 'invalid', plannedWeight: '10kg', targetReps: '10', restSeconds: 60 }],
-            },
-          ],
-        },
-      ],
+      days: [{
+        id: 'a', name: 'A', blocks: [{
+          exerciseId: 'e1', name: 'E1',
+          sets: [{ kind: 'invalid', plannedWeight: '10kg', targetReps: '10', restSeconds: 60 }],
+        }],
+      }],
     };
     const result = validatePlan(plan);
     expect(result.valid).toBe(false);
@@ -67,16 +63,12 @@ describe('validatePlan', () => {
   it('rejects negative restSeconds', () => {
     const plan = {
       ...validPlan,
-      days: [
-        {
-          id: 'a', name: 'A', blocks: [
-            {
-              exerciseId: 'e1', name: 'E1',
-              sets: [{ kind: 'top', plannedWeight: '10kg', targetReps: '10', restSeconds: -1 }],
-            },
-          ],
-        },
-      ],
+      days: [{
+        id: 'a', name: 'A', blocks: [{
+          exerciseId: 'e1', name: 'E1',
+          sets: [{ kind: 'top', plannedWeight: '10kg', targetReps: '10', restSeconds: -1 }],
+        }],
+      }],
     };
     const result = validatePlan(plan);
     expect(result.valid).toBe(false);
@@ -85,18 +77,81 @@ describe('validatePlan', () => {
   it('rejects missing exerciseId', () => {
     const plan = {
       ...validPlan,
-      days: [
+      days: [{
+        id: 'a', name: 'A', blocks: [{
+          exerciseId: '', name: 'E1',
+          sets: [{ kind: 'top', plannedWeight: '10kg', targetReps: '10', restSeconds: 60 }],
+        }],
+      }],
+    };
+    const result = validatePlan(plan);
+    expect(result.valid).toBe(false);
+  });
+});
+
+describe('validatePlan with OptionBlock', () => {
+  const planWithOption = {
+    version: 1,
+    planName: '测试',
+    days: [{
+      id: 'a', name: 'A',
+      blocks: [
         {
-          id: 'a', name: 'A', blocks: [
+          exerciseId: 'e1', name: 'E1',
+          sets: [{ kind: 'top', plannedWeight: '10kg', targetReps: '8', restSeconds: 60 }],
+        },
+        {
+          kind: 'option',
+          id: 'opt1',
+          name: '可选动作',
+          options: [
             {
-              exerciseId: '', name: 'E1',
-              sets: [{ kind: 'top', plannedWeight: '10kg', targetReps: '10', restSeconds: 60 }],
+              exerciseId: 'alt-a', name: '备选A',
+              sets: [{ kind: 'working', plannedWeight: '10kg', targetReps: '10', restSeconds: 60 }],
+            },
+            {
+              exerciseId: 'alt-b', name: '备选B',
+              sets: [{ kind: 'working', plannedWeight: '12kg', targetReps: '10', restSeconds: 60 }],
             },
           ],
         },
       ],
-    };
-    const result = validatePlan(plan);
+    }],
+  };
+
+  it('accepts valid OptionBlock', () => {
+    const result = validatePlan(planWithOption);
+    expect(result.valid).toBe(true);
+  });
+
+  it('rejects OptionBlock without kind', () => {
+    const p = JSON.parse(JSON.stringify(planWithOption));
+    delete p.days[0].blocks[1].kind;
+    const result = validatePlan(p);
+    expect(result.valid).toBe(false);
+  });
+
+  it('rejects OptionBlock with empty options array', () => {
+    const p = JSON.parse(JSON.stringify(planWithOption));
+    p.days[0].blocks[1].options = [];
+    const result = validatePlan(p);
+    expect(result.valid).toBe(false);
+  });
+
+  it('rejects OptionBlock with mismatched sets length', () => {
+    const p = JSON.parse(JSON.stringify(planWithOption));
+    p.days[0].blocks[1].options[1].sets = [
+      { kind: 'working', plannedWeight: '12kg', targetReps: '10', restSeconds: 60 },
+      { kind: 'working', plannedWeight: '12kg', targetReps: '10', restSeconds: 60 },
+    ];
+    const result = validatePlan(p);
+    expect(result.valid).toBe(false);
+  });
+
+  it('rejects invalid set inside option', () => {
+    const p = JSON.parse(JSON.stringify(planWithOption));
+    p.days[0].blocks[1].options[0].sets[0].kind = 'invalid';
+    const result = validatePlan(p);
     expect(result.valid).toBe(false);
   });
 });

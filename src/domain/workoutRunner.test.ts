@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import {
-  flattenSets, startWorkout, completeSet, startNextSet,
+  flattenSets, startWorkout, selectBlock, completeSet, startNextSet,
   getRemainingRestSeconds, updateActualReps, SET_KIND_LABELS,
 } from './workoutRunner';
-import type { TrainingPlan, TrainingDay } from '../types';
+import type { TrainingPlan, TrainingDay, Block } from '../types';
 
 const samplePlan: TrainingPlan = {
   version: 1,
@@ -31,71 +31,96 @@ const sampleDay: TrainingDay = {
   ],
 };
 
-describe('flattenSets', () => {
-  it('flattens all sets from all blocks', () => {
-    const flat = flattenSets(sampleDay);
-    expect(flat).toHaveLength(3);
-    expect(flat[0].set.kind).toBe('top');
-    expect(flat[1].set.kind).toBe('backoff');
-    expect(flat[2].set.kind).toBe('working');
-  });
-});
-
 describe('startWorkout', () => {
-  it('creates workout state with session', () => {
+  it('creates state with null currentBlockIndex (waiting for selection)', () => {
     const state = startWorkout(samplePlan, sampleDay);
     expect(state.session.dayId).toBe('strength-a');
-    expect(state.flatSets).toHaveLength(3);
-    expect(state.currentFlatIndex).toBe(0);
+    expect(state.allBlocks).toHaveLength(2);
+    expect(state.currentBlockIndex).toBeNull();
+    expect(state.remainingBlockIndices).toEqual([0, 1]);
     expect(state.phase).toBe('active');
   });
 });
 
-describe('completeSet', () => {
-  it('completes a set and enters rest', () => {
+describe('selectBlock', () => {
+  it('selects a block and expands its sets', () => {
     const state = startWorkout(samplePlan, sampleDay);
-    const next = completeSet(state, 8);
-    expect(next.phase).toBe('rest');
-    expect(next.completedSetLogs).toHaveLength(1);
-    expect(next.completedSetLogs[0].actualReps).toBe(8);
-    expect(next.restEndsAt).toBeTruthy();
+    const next = selectBlock(state, 0);
+    expect(next.currentBlockIndex).toBe(0);
+    expect(next.flatSets).toHaveLength(2);
+    expect(next.flatSets[0].set.kind).toBe('top');
+    expect(next.currentFlatIndex).toBe(0);
   });
 
-  it('completes last set and finishes workout', () => {
+  it('does not remove block from remaining until block completes', () => {
     const state = startWorkout(samplePlan, sampleDay);
-    let s = completeSet(state, 8);   // set 0
-    s = startNextSet(s);
-    s = completeSet(s, 10);          // set 1
-    s = startNextSet(s);
-    s = completeSet(s, 12);          // set 2 (last)
-    expect(s.phase).toBe('completed');
-    expect(s.session.finishedAt).toBeTruthy();
-    expect(s.session.setLogs).toHaveLength(3);
+    const next = selectBlock(state, 0);
+    // Block 0 is still in remaining until all its sets are done
+    expect(next.remainingBlockIndices).toEqual([0, 1]);
+  });
+
+  it('ignores selection when already in a block', () => {
+    const state = startWorkout(samplePlan, sampleDay);
+    const s1 = selectBlock(state, 0);
+    const s2 = selectBlock(s1, 1);
+    expect(s2.currentBlockIndex).toBe(0);
   });
 });
 
-describe('startNextSet', () => {
-  it('advances to next set and records actualRestSeconds', () => {
+describe('completeSet and startNextSet with block model', () => {
+  it('after completing all blocks, workout completes', () => {
     const state = startWorkout(samplePlan, sampleDay);
-    let s = completeSet(state, 8);
+    // Complete block 0 first
+    let s = selectBlock(state, 0); // 卧推 2 sets
+    s = completeSet(s, 8);   // set 0
+    s = startNextSet(s);     // advance within block
+    s = completeSet(s, 10);  // set 1 (last in block)
+    expect(s.phase).toBe('rest');
+    s = startNextSet(s);     // block complete → back to selection
+    expect(s.currentBlockIndex).toBeNull();
+    expect(s.remainingBlockIndices).toEqual([1]);
+
+    // Now complete block 1 (last block)
+    s = selectBlock(s, 1);   // 深蹲 1 set
+    s = completeSet(s, 12);  // last set of last block
+    expect(s.phase).toBe('completed');
+  });
+
+  it('completes a block and returns to pending list', () => {
+    const state = startWorkout(samplePlan, sampleDay);
+    let s = selectBlock(state, 0); // 卧推 2 sets
+    s = completeSet(s, 8);
+    expect(s.phase).toBe('rest');
+    expect(s.currentBlockIndex).toBe(0);
+
     s = startNextSet(s);
     expect(s.phase).toBe('active');
     expect(s.currentFlatIndex).toBe(1);
-    expect(s.completedSetLogs[0].actualRestSeconds).toBeGreaterThanOrEqual(0);
-  });
 
-  it('does nothing when not in rest phase', () => {
-    const state = startWorkout(samplePlan, sampleDay);
-    const s = startNextSet(state);
-    expect(s.currentFlatIndex).toBe(0);
+    s = completeSet(s, 10); // last set in block
+    expect(s.phase).toBe('rest');
+
+    s = startNextSet(s); // block done → back to selection
+    expect(s.currentBlockIndex).toBeNull();
+    expect(s.remainingBlockIndices).toEqual([1]);
     expect(s.phase).toBe('active');
+  });
+});
+
+describe('flattenSets', () => {
+  it('flattens single block sets', () => {
+    const block: Block = sampleDay.blocks[0];
+    const flat = flattenSets(block, 0);
+    expect(flat).toHaveLength(2);
+    expect(flat[0].blockIndex).toBe(0);
   });
 });
 
 describe('getRemainingRestSeconds', () => {
   it('returns positive value during rest', () => {
     const state = startWorkout(samplePlan, sampleDay);
-    const s = completeSet(state, 8);
+    let s = selectBlock(state, 0);
+    s = completeSet(s, 8);
     expect(getRemainingRestSeconds(s)).toBeGreaterThan(0);
   });
 
@@ -108,7 +133,8 @@ describe('getRemainingRestSeconds', () => {
 describe('updateActualReps', () => {
   it('updates reps for a completed set', () => {
     const state = startWorkout(samplePlan, sampleDay);
-    let s = completeSet(state, 8);
+    let s = selectBlock(state, 0);
+    s = completeSet(s, 8);
     s = updateActualReps(s, 0, 7);
     expect(s.completedSetLogs[0].actualReps).toBe(7);
   });

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { migrateEnglishPlan, needsMigration } from './planMigration';
-import type { TrainingPlan } from '../types';
+import type { TrainingPlan, ExerciseBlock } from '../types';
 
 const englishPlan: TrainingPlan = {
   version: 1,
@@ -34,11 +34,13 @@ describe('needsMigration', () => {
 describe('migrateEnglishPlan', () => {
   it('converts top set to top', () => {
     const result = migrateEnglishPlan(englishPlan);
-    expect(result.days[0].blocks[0].sets[0].kind).toBe('top');
+    const b = result.days[0].blocks[0] as ExerciseBlock;
+    expect(b.sets[0].kind).toBe('top');
   });
 
   it('converts each side weight format', () => {
     const result = migrateEnglishPlan(englishPlan);
-    expect(result.days[0].blocks[0].sets[0].plannedWeight).toBe('两边各10kg');
+    const b = result.days[0].blocks[0] as ExerciseBlock;
+    expect(b.sets[0].plannedWeight).toBe('两边各10kg');
   });
 });

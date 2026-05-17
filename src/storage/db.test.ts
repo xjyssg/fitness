@@ -25,12 +25,16 @@ const sampleSession: WorkoutSession = {
 
 const sampleWorkoutState: WorkoutState = {
   session: sampleSession,
+  allBlocks: [],
+  currentBlockIndex: null,
   flatSets: [],
   currentFlatIndex: 0,
+  remainingBlockIndices: [],
   phase: 'active',
   restStartedAt: null,
   restEndsAt: null,
   completedSetLogs: [],
+  selectedExerciseIds: {},
 };
 
 describe('db', () => {

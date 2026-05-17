@@ -8,6 +8,7 @@ import WorkoutScreen from './WorkoutScreen';
 import CardioScreen from './CardioScreen';
 import SummaryScreen from './SummaryScreen';
 import HistoryScreen from './HistoryScreen';
+import PlanEditor from './PlanEditor';
 import samplePlan from '../samplePlans/currentTrainingPlan.json';
 
 export default function App() {
@@ -98,6 +99,10 @@ export default function App() {
     }));
   }, []);
 
+  const handleGoEditor = useCallback(() => {
+    setState(s => ({ ...s, screen: 'editor' }));
+  }, []);
+
   const handleGoHome = useCallback(() => {
     setState(s => ({ ...s, screen: 'home', completedSession: null, workoutState: null }));
   }, []);
@@ -119,6 +124,7 @@ export default function App() {
             onStartWorkout={handleStartWorkout}
             onStartCardio={handleStartCardio}
             onGoHistory={handleGoHistory}
+            onGoEditor={handleGoEditor}
           />
         );
       case 'workout':
@@ -142,6 +148,13 @@ export default function App() {
             session={state.completedSession}
             sessions={state.sessions}
             onGoHome={handleGoHome}
+          />
+        ) : null;
+      case 'editor':
+        return state.plan ? (
+          <PlanEditor
+            plan={state.plan}
+            onBack={handleGoHome}
           />
         ) : null;
       case 'history':
