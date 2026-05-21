@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { TrainingPlan, ExerciseBlock } from '../types';
 import { downloadFile } from '../domain/exporters';
-import { parseWeight, buildWeight, weightToNumber } from '../domain/weightUtils';
+import { displayWeight, normalizeWeight } from '../domain/weightUtils';
 
 const SET_KIND_LABELS_MAP: Record<string, string> = {
   top: '顶组', backoff: '降重组', working: '正式组', accessory: '辅助组', cardio: '有氧',
@@ -127,11 +127,8 @@ export default function PlanEditor({ plan, onBack }: Props) {
                 <input
                   type="number"
                   inputMode="decimal"
-                  value={weightToNumber(set.plannedWeight)}
-                  onChange={e => {
-                    const { prefix, suffix } = parseWeight(set.plannedWeight);
-                    handleWeightChange(entry.blockIdx, entry.setIdx, buildWeight(prefix, suffix, e.target.value), entry.optIdx);
-                  }}
+                  value={set.plannedWeight}
+                  onChange={e => handleWeightChange(entry.blockIdx, entry.setIdx, normalizeWeight(e.target.value), entry.optIdx)}
                   style={editInputStyle}
                 />
               </div>

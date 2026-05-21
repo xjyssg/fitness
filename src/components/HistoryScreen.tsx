@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { WorkoutSession, SetLog } from '../types';
 import { exportAllSessionsToCSV, exportAllSessionsToJSON, downloadFile } from '../domain/exporters';
 import { clearAll, deleteSession, saveSession } from '../storage/db';
-import { parseWeight, buildWeight, simplifyWeight, weightToNumber } from '../domain/weightUtils';
+import { displayWeight, normalizeWeight } from '../domain/weightUtils';
 
 interface Props {
   sessions: WorkoutSession[];
@@ -139,23 +139,15 @@ export default function HistoryScreen({ sessions, onGoHome, onSessionsChange }: 
                     <div style={{ display: 'flex', gap: 12, marginTop: 4, alignItems: 'center' }}>
                       <span style={{ fontSize: '12px', color: '#888' }}>第{log.setIndex}组</span>
                       {editing?.setIndex === i && editing?.field === 'weight' ? (
-                        <input type="number" inputMode="decimal" defaultValue={weightToNumber(log.actualWeight)}
+                        <input type="number" inputMode="decimal" defaultValue={log.actualWeight}
                           style={editInput}
-                          onBlur={e => {
-                            const { prefix, suffix } = parseWeight(log.actualWeight);
-                            handleEditCommit(buildWeight(prefix, suffix, e.target.value));
-                          }}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') {
-                              const { prefix, suffix } = parseWeight(log.actualWeight);
-                              handleEditCommit(buildWeight(prefix, suffix, (e.target as HTMLInputElement).value));
-                            }
-                          }}
+                          onBlur={e => handleEditCommit(normalizeWeight(e.target.value))}
+                          onKeyDown={e => { if (e.key === 'Enter') handleEditCommit(normalizeWeight((e.target as HTMLInputElement).value)); }}
                           autoFocus />
                       ) : (
                         <span style={{ fontSize: '13px', color: '#e94560', cursor: 'pointer' }}
                           onClick={() => handleEditStart(i, 'weight')}>
-                          {simplifyWeight(log.actualWeight)}
+                          {displayWeight(log.actualWeight)}
                         </span>
                       )}
                       <span style={{ color: '#555' }}>×</span>

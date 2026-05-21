@@ -6,7 +6,7 @@ import {
 } from '../domain/workoutRunner';
 import { saveIncompleteWorkout } from '../storage/db';
 import { playBeep } from '../reminders/reminder';
-import { parseWeight, buildWeight, simplifyWeight, weightToNumber } from '../domain/weightUtils';
+import { displayWeight, normalizeWeight } from '../domain/weightUtils';
 
 const DEBUG_MODE = new URLSearchParams(window.location.search).has('debug');
 const DEBUG_REST_SECONDS = 3;
@@ -24,9 +24,6 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
   const [restComplete, setRestComplete] = useState(false);
   const [repInput, setRepInput] = useState('');
   const [weightInput, setWeightInput] = useState('');
-  const [weightPrefix, setWeightPrefix] = useState('');
-  const [weightSuffix, setWeightSuffix] = useState('');
-  const [weightIsKg, setWeightIsKg] = useState(true);
   const [repError, setRepError] = useState(false);
   const [editingSetIndex, setEditingSetIndex] = useState<number | null>(null);
   const [editingWeightIndex, setEditingWeightIndex] = useState<number | null>(null);
@@ -55,11 +52,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
 
   useEffect(() => {
     if (current) {
-      const { prefix, suffix, number, isKg } = parseWeight(current.set.plannedWeight);
-      setWeightPrefix(prefix);
-      setWeightSuffix(suffix);
-      setWeightInput(number);
-      setWeightIsKg(isKg);
+      setWeightInput(current.set.plannedWeight);
     }
   }, [workoutState.currentBlockIndex, workoutState.currentFlatIndex]);
 
@@ -151,7 +144,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
       return;
     }
     setRepError(false);
-    const actualWeight = weightIsKg ? buildWeight(weightPrefix, weightSuffix, weightInput) : weightInput;
+    const actualWeight = normalizeWeight(weightInput);
 
     let next = completeSet(workoutState, repsNum, actualWeight);
     if (DEBUG_MODE && next.phase === 'rest') {
@@ -171,7 +164,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
         playBeep();
       }, restMs);
     }
-  }, [repInput, weightInput, weightIsKg, weightPrefix, workoutState, current, onUpdateState, onComplete]);
+  }, [repInput, weightInput, workoutState, current, onUpdateState, onComplete]);
 
   const handleNextSet = useCallback(() => {
     if (vibrateRef.current) clearTimeout(vibrateRef.current);
@@ -212,7 +205,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
           <button key={opt.exerciseId} onClick={() => handleOptionSelect(opt.exerciseId)} style={blockCardStyle}>
             <div style={{ fontSize: '16px', fontWeight: 600 }}>{opt.name}</div>
             <div style={{ fontSize: '12px', color: '#888', marginTop: 4 }}>
-              {opt.sets.length} 组 · {opt.sets[0].plannedWeight} · {opt.sets[0].targetReps}次
+              {opt.sets.length} 组 · {displayWeight(opt.sets[0].plannedWeight)} · {opt.sets[0].targetReps}次
             </div>
             {opt.primaryMuscles && (
               <div style={{ marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
@@ -249,7 +242,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
               <div style={{ fontSize: '12px', color: '#888', marginTop: 4 }}>
                 {'options' in block
                   ? `${block.options.length} 个备选 · ${block.options[0].sets.length} 组`
-                  : `${block.sets.length} 组 · ${firstBlock.sets[0].plannedWeight}`}
+                  : `${block.sets.length} 组 · ${displayWeight(firstBlock.sets[0].plannedWeight)}`}
               </div>
             </button>
           );
@@ -284,7 +277,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
             <div style={{ display: 'flex', gap: 16, marginTop: 12, flexWrap: 'wrap' }}>
               <Tag label="组别" value={`第 ${current.setIndex + 1} 组 / 共 ${workoutState.flatSets.length} 组`} />
               <Tag label="类型" value={SET_KIND_LABELS[current.set.kind] || current.set.kind} />
-              <Tag label="计划重量" value={current.set.plannedWeight} />
+              <Tag label="计划重量" value={displayWeight(current.set.plannedWeight)} />
               <Tag label="目标" value={`${current.set.targetReps} 次`} />
             </div>
             {lastSetByKey.get(`${current.block.exerciseId}-${current.setIndex + 1}`) && (
@@ -309,7 +302,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
                 <label style={{ fontSize: '14px', color: '#aaa' }}>实际重量（kg）</label>
                 <input type="number" inputMode="decimal" value={weightInput}
                   onChange={e => setWeightInput(e.target.value)}
-                  placeholder={weightIsKg ? '数字' : '重量'}
+                  placeholder="kg"
                   style={{ ...inputStyle, maxWidth: 100, marginTop: 4 }} />
               </div>
               <div>
@@ -379,28 +372,20 @@ function CompletedSets({ logs, lastSetByKey, editingIndex, editingWeightIndex, o
               <span style={{ fontSize: '12px', color: '#888', marginLeft: 8 }}>
                 第{log.setIndex}组 ·{' '}
                 {editingWeightIndex === i ? (
-                  <input type="number" inputMode="decimal" defaultValue={weightToNumber(log.actualWeight)}
+                  <input type="number" inputMode="decimal" defaultValue={log.actualWeight}
                     style={{ ...editInlineStyle, width: 70 }}
-                    onBlur={e => {
-                      const { prefix, suffix } = parseWeight(log.actualWeight);
-                      onUpdateWeight(i, buildWeight(prefix, suffix, e.target.value));
-                    }}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        const { prefix, suffix } = parseWeight(log.actualWeight);
-                        onUpdateWeight(i, buildWeight(prefix, suffix, (e.target as HTMLInputElement).value));
-                      }
-                    }}
+                    onBlur={e => onUpdateWeight(i, normalizeWeight(e.target.value))}
+                    onKeyDown={e => { if (e.key === 'Enter') onUpdateWeight(i, normalizeWeight((e.target as HTMLInputElement).value)); }}
                     autoFocus />
                 ) : (
                   <span style={{ color: '#e94560', cursor: 'pointer' }} onClick={() => onEditWeight(i)}>
-                    {simplifyWeight(log.actualWeight)}
+                    {displayWeight(log.actualWeight)}
                   </span>
                 )}
               </span>
               {lastData && (
                 <span style={{ fontSize: '11px', color: '#e94560', marginLeft: 8 }}>
-                  上次 {simplifyWeight(lastData.actualWeight)} × {lastData.actualReps}次
+                  上次 {displayWeight(lastData.actualWeight)} × {lastData.actualReps}次
                 </span>
               )}
             </div>
