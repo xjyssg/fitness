@@ -102,31 +102,22 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
       return;
     }
 
-    const restMs = (current?.set.restSeconds || 60) * 1000;
-    if (vibrateRef.current) clearTimeout(vibrateRef.current);
-    vibrateRef.current = setTimeout(() => {
-      try { navigator.vibrate?.([300, 150, 300]); } catch {}
-      playBeep();
-    }, restMs);
-  }, [repInput, workoutState, current, onUpdateState, onComplete]);
+    // 只有进入休息时才设置倒计时提醒
+    if (next.phase === 'rest') {
+      const restMs = (current?.set.restSeconds || 60) * 1000;
+      if (vibrateRef.current) clearTimeout(vibrateRef.current);
+      vibrateRef.current = setTimeout(() => {
+        try { navigator.vibrate?.([300, 150, 300]); } catch {}
+        playBeep();
+      }, restMs);
+    }
+  }, [repInput, weightInput, workoutState, current, onUpdateState, onComplete]);
 
   const handleNextSet = useCallback(() => {
-    const repsNum = parseInt(repInput, 10);
-    if (!repInput.trim() || isNaN(repsNum) || repsNum <= 0) {
-      setRepError(true);
-      repInputRef.current?.focus();
-      return;
-    }
-    setRepError(false);
-
     if (vibrateRef.current) clearTimeout(vibrateRef.current);
-
-    const lastLogIndex = workoutState.completedSetLogs.length - 1;
-    const withUpdatedReps = updateActualReps(workoutState, lastLogIndex, repsNum);
-    const next = startNextSet(withUpdatedReps);
+    const next = startNextSet(workoutState);
     onUpdateState(next);
-    setRepInput('');
-  }, [repInput, workoutState, onUpdateState]);
+  }, [workoutState, onUpdateState]);
 
   const handleUpdateReps = (index: number, newReps: number) => {
     if (isNaN(newReps) || newReps <= 0) return;
@@ -310,47 +301,9 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
           {restComplete && (
             <div style={{ marginTop: 20 }}>
               <button onClick={handleNextSet} style={btnPrimary}>
-                {isLastSetInBlock ? '选择下一个动作' : '开始下一组'}
+                开始下一组
               </button>
             </div>
-          )}
-
-          <div style={{ marginTop: 24, display: 'flex', gap: 12, justifyContent: 'center' }}>
-            <div>
-              <label style={{ fontSize: '14px', color: '#aaa' }}>实际重量</label>
-              <input
-                type="text"
-                value={weightInput}
-                onChange={e => setWeightInput(e.target.value)}
-                placeholder="输入实际重量"
-                style={{
-                  ...inputStyle,
-                  maxWidth: 140,
-                  marginTop: 4,
-                }}
-              />
-            </div>
-            <div>
-              <label style={{ fontSize: '14px', color: '#aaa' }}>实际次数</label>
-              <input
-                ref={repInputRef}
-                type="number"
-                inputMode="numeric"
-                value={repInput}
-                onChange={e => { setRepInput(e.target.value); setRepError(false); }}
-                placeholder="输入实际次数"
-                style={{
-                  ...inputStyle,
-                  borderColor: repError ? '#e94560' : '#333',
-                  maxWidth: 100,
-                  marginTop: 4,
-                  marginBottom: 4,
-                }}
-              />
-            </div>
-          </div>
-          {repError && (
-            <div style={{ color: '#e94560', fontSize: '13px', textAlign: 'center' }}>请填写实际次数</div>
           )}
         </div>
       )}

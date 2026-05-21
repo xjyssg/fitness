@@ -74,9 +74,8 @@ describe('completeSet and startNextSet with block model', () => {
     let s = selectBlock(state, 0); // 卧推 2 sets
     s = completeSet(s, 8);   // set 0
     s = startNextSet(s);     // advance within block
-    s = completeSet(s, 10);  // set 1 (last in block)
-    expect(s.phase).toBe('rest');
-    s = startNextSet(s);     // block complete → back to selection
+    s = completeSet(s, 10);  // set 1 (last in block, not last block → directly back to selection)
+    expect(s.phase).toBe('active');
     expect(s.currentBlockIndex).toBeNull();
     expect(s.remainingBlockIndices).toEqual([1]);
 
@@ -86,21 +85,18 @@ describe('completeSet and startNextSet with block model', () => {
     expect(s.phase).toBe('completed');
   });
 
-  it('completes a block and returns to pending list', () => {
+  it('completes a block and returns to pending list directly', () => {
     const state = startWorkout(samplePlan, sampleDay);
     let s = selectBlock(state, 0); // 卧推 2 sets
-    s = completeSet(s, 8);
+    s = completeSet(s, 8);          // set 0 → enters rest (not last in block)
     expect(s.phase).toBe('rest');
     expect(s.currentBlockIndex).toBe(0);
 
-    s = startNextSet(s);
+    s = startNextSet(s);            // advance to set 1
     expect(s.phase).toBe('active');
     expect(s.currentFlatIndex).toBe(1);
 
-    s = completeSet(s, 10); // last set in block
-    expect(s.phase).toBe('rest');
-
-    s = startNextSet(s); // block done → back to selection
+    s = completeSet(s, 10);         // last set in block → directly back to selection
     expect(s.currentBlockIndex).toBeNull();
     expect(s.remainingBlockIndices).toEqual([1]);
     expect(s.phase).toBe('active');

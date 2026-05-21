@@ -131,6 +131,24 @@ export function completeSet(state: WorkoutState, actualReps: number, actualWeigh
     };
   }
 
+  // 当前 block 完成但不是最后一个 block：不回退到选择，不进入休息
+  if (isLastSetInBlock) {
+    const remainingBlockIndices = state.remainingBlockIndices.filter(
+      i => i !== state.currentBlockIndex
+    );
+    return {
+      ...state,
+      currentBlockIndex: null,
+      flatSets: [],
+      currentFlatIndex: 0,
+      remainingBlockIndices,
+      phase: 'active',
+      restStartedAt: null,
+      restEndsAt: null,
+      completedSetLogs,
+    };
+  }
+
   const restSeconds = current.set.restSeconds;
   const restStartedAt = now.toISOString();
   const restEndsAt = new Date(now.getTime() + restSeconds * 1000).toISOString();
