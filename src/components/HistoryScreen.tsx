@@ -2,15 +2,12 @@ import React, { useState } from 'react';
 import type { WorkoutSession, SetLog } from '../types';
 import { exportAllSessionsToCSV, exportAllSessionsToJSON, downloadFile } from '../domain/exporters';
 import { clearAll, deleteSession, saveSession } from '../storage/db';
+import { parseWeight, buildWeight, simplifyWeight, weightToNumber } from '../domain/weightUtils';
 
 interface Props {
   sessions: WorkoutSession[];
   onGoHome: () => void;
   onSessionsChange: () => void;
-}
-
-function simplifyWeight(weight: string): string {
-  return weight.replace(/^[一-龥]+/, '');
 }
 
 export default function HistoryScreen({ sessions, onGoHome, onSessionsChange }: Props) {
@@ -142,10 +139,18 @@ export default function HistoryScreen({ sessions, onGoHome, onSessionsChange }: 
                     <div style={{ display: 'flex', gap: 12, marginTop: 4, alignItems: 'center' }}>
                       <span style={{ fontSize: '12px', color: '#888' }}>第{log.setIndex}组</span>
                       {editing?.setIndex === i && editing?.field === 'weight' ? (
-                        <input type="text" defaultValue={log.actualWeight}
+                        <input type="number" inputMode="decimal" defaultValue={weightToNumber(log.actualWeight)}
                           style={editInput}
-                          onBlur={e => handleEditCommit(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter') handleEditCommit((e.target as HTMLInputElement).value); }}
+                          onBlur={e => {
+                            const { prefix, suffix } = parseWeight(log.actualWeight);
+                            handleEditCommit(buildWeight(prefix, suffix, e.target.value));
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              const { prefix, suffix } = parseWeight(log.actualWeight);
+                              handleEditCommit(buildWeight(prefix, suffix, (e.target as HTMLInputElement).value));
+                            }
+                          }}
                           autoFocus />
                       ) : (
                         <span style={{ fontSize: '13px', color: '#e94560', cursor: 'pointer' }}

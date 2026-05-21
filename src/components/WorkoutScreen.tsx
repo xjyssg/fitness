@@ -6,6 +6,7 @@ import {
 } from '../domain/workoutRunner';
 import { saveIncompleteWorkout } from '../storage/db';
 import { playBeep } from '../reminders/reminder';
+import { parseWeight, buildWeight, simplifyWeight, weightToNumber } from '../domain/weightUtils';
 
 const DEBUG_MODE = new URLSearchParams(window.location.search).has('debug');
 const DEBUG_REST_SECONDS = 3;
@@ -18,29 +19,13 @@ interface Props {
   onExit: (state: WorkoutState) => void;
 }
 
-function parseWeight(weight: string): { prefix: string; number: string; isKg: boolean } {
-  const match = weight.match(/^([一-龥]*)\s*([\d.]+)\s*kg\s*$/);
-  if (match) return { prefix: match[1], number: match[2], isKg: true };
-  return { prefix: '', number: weight, isKg: false };
-}
-
-function buildWeight(prefix: string, number: string): string {
-  const trimmed = number.trim();
-  if (!trimmed) return prefix || '';
-  if (prefix) return `${prefix}${trimmed}kg`;
-  return `${trimmed}kg`;
-}
-
-function simplifyWeight(weight: string): string {
-  return weight.replace(/^[一-龥]+/, '');
-}
-
 export default function WorkoutScreen({ workoutState, sessions, onUpdateState, onComplete, onExit }: Props) {
   const [restSeconds, setRestSeconds] = useState(0);
   const [restComplete, setRestComplete] = useState(false);
   const [repInput, setRepInput] = useState('');
   const [weightInput, setWeightInput] = useState('');
   const [weightPrefix, setWeightPrefix] = useState('');
+  const [weightSuffix, setWeightSuffix] = useState('');
   const [weightIsKg, setWeightIsKg] = useState(true);
   const [repError, setRepError] = useState(false);
   const [editingSetIndex, setEditingSetIndex] = useState<number | null>(null);
@@ -70,8 +55,9 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
 
   useEffect(() => {
     if (current) {
-      const { prefix, number, isKg } = parseWeight(current.set.plannedWeight);
+      const { prefix, suffix, number, isKg } = parseWeight(current.set.plannedWeight);
       setWeightPrefix(prefix);
+      setWeightSuffix(suffix);
       setWeightInput(number);
       setWeightIsKg(isKg);
     }
@@ -165,7 +151,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
       return;
     }
     setRepError(false);
-    const actualWeight = weightIsKg ? buildWeight(weightPrefix, weightInput) : weightInput;
+    const actualWeight = weightIsKg ? buildWeight(weightPrefix, weightSuffix, weightInput) : weightInput;
 
     let next = completeSet(workoutState, repsNum, actualWeight);
     if (DEBUG_MODE && next.phase === 'rest') {
@@ -320,7 +306,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
           <div style={{ marginTop: 20, textAlign: 'center' }}>
             <div style={{ marginTop: 12, marginBottom: 12, display: 'flex', gap: 12, justifyContent: 'center' }}>
               <div>
-                <label style={{ fontSize: '14px', color: '#aaa' }}>实际重量{weightIsKg ? ' (kg)' : ''}</label>
+                <label style={{ fontSize: '14px', color: '#aaa' }}>实际重量（kg）</label>
                 <input type="number" inputMode="decimal" value={weightInput}
                   onChange={e => setWeightInput(e.target.value)}
                   placeholder={weightIsKg ? '数字' : '重量'}
@@ -393,10 +379,18 @@ function CompletedSets({ logs, lastSetByKey, editingIndex, editingWeightIndex, o
               <span style={{ fontSize: '12px', color: '#888', marginLeft: 8 }}>
                 第{log.setIndex}组 ·{' '}
                 {editingWeightIndex === i ? (
-                  <input type="text" defaultValue={log.actualWeight}
-                    style={{ ...editInlineStyle, width: 80 }}
-                    onBlur={e => onUpdateWeight(i, e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') onUpdateWeight(i, (e.target as HTMLInputElement).value); }}
+                  <input type="number" inputMode="decimal" defaultValue={weightToNumber(log.actualWeight)}
+                    style={{ ...editInlineStyle, width: 70 }}
+                    onBlur={e => {
+                      const { prefix, suffix } = parseWeight(log.actualWeight);
+                      onUpdateWeight(i, buildWeight(prefix, suffix, e.target.value));
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        const { prefix, suffix } = parseWeight(log.actualWeight);
+                        onUpdateWeight(i, buildWeight(prefix, suffix, (e.target as HTMLInputElement).value));
+                      }
+                    }}
                     autoFocus />
                 ) : (
                   <span style={{ color: '#e94560', cursor: 'pointer' }} onClick={() => onEditWeight(i)}>
