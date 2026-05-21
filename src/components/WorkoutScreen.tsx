@@ -31,6 +31,11 @@ function buildWeight(prefix: string, number: string): string {
   return `${trimmed}kg`;
 }
 
+/** 简化重量显示：去掉中文前缀，只保留数字+单位 */
+function simplifyWeight(weight: string): string {
+  return weight.replace(/^[一-龥]+/, '');
+}
+
 export default function WorkoutScreen({ workoutState, sessions, onUpdateState, onComplete }: Props) {
   const [restSeconds, setRestSeconds] = useState(0);
   const [restComplete, setRestComplete] = useState(false);
@@ -50,15 +55,16 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
   const isLastBlock = workoutState.remainingBlockIndices.length === 1;
   const isLastSet = isLastSetInBlock && isLastBlock;
 
-  // 同训练日、同计划的历史记录，按 exerciseId 索引最近一次数据
-  const lastSessionByExercise = useMemo(() => {
+  // 同训练日、同计划的历史记录，按 exerciseId-setIndex 索引每组数据
+  const lastSetByKey = useMemo(() => {
     const map = new Map<string, { actualWeight: string; actualReps: number }>();
     for (const s of sessions) {
       if (s.dayId !== workoutState.session.dayId) continue;
       if (!s.setLogs) continue;
       for (const log of s.setLogs) {
-        if (!map.has(log.exerciseId)) {
-          map.set(log.exerciseId, { actualWeight: log.actualWeight, actualReps: log.actualReps });
+        const key = `${log.exerciseId}-${log.setIndex}`;
+        if (!map.has(key)) {
+          map.set(key, { actualWeight: log.actualWeight, actualReps: log.actualReps });
         }
       }
     }
@@ -195,7 +201,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
           const firstBlock = 'options' in block ? block.options[0] : block;
           const firstSet = firstBlock.sets[0];
           // 查找上次记录
-          const lastData = lastSessionByExercise.get(firstBlock.exerciseId);
+          const lastData = lastSetByKey.get(`${firstBlock.exerciseId}-1`);
           return (
             <button
               key={origIdx}
@@ -221,6 +227,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
         {workoutState.completedSetLogs.length > 0 && (
           <CompletedSets
             logs={workoutState.completedSetLogs}
+            lastSetByKey={lastSetByKey}
             editingIndex={editingSetIndex}
             onEdit={setEditingSetIndex}
             onUpdate={handleUpdateReps}
@@ -242,7 +249,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
           选择执行动作
         </div>
         {block.options.map(opt => {
-          const lastData = lastSessionByExercise.get(opt.exerciseId);
+          const lastData = lastSetByKey.get(`${opt.exerciseId}-1`);
           return (
             <button
               key={opt.exerciseId}
@@ -300,9 +307,9 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
               <Tag label="目标" value={`${current.set.targetReps} 次`} />
             </div>
 
-            {lastSessionByExercise.get(current.block.exerciseId) && (
+            {lastSetByKey.get(`${current.block.exerciseId}-${current.setIndex + 1}`) && (
               <div style={{ marginTop: 8, fontSize: '12px', color: '#e94560' }}>
-                上次：{lastSessionByExercise.get(current.block.exerciseId)!.actualWeight} × {lastSessionByExercise.get(current.block.exerciseId)!.actualReps}次
+                上次：{lastSetByKey.get(`${current.block.exerciseId}-${current.setIndex + 1}`)!.actualWeight} × {lastSetByKey.get(`${current.block.exerciseId}-${current.setIndex + 1}`)!.actualReps}次
               </div>
             )}
 
@@ -394,6 +401,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
       {workoutState.completedSetLogs.length > 0 && (
         <CompletedSets
           logs={workoutState.completedSetLogs}
+          lastSetByKey={lastSetByKey}
           editingIndex={editingSetIndex}
           onEdit={setEditingSetIndex}
           onUpdate={handleUpdateReps}
@@ -404,9 +412,10 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
 }
 
 function CompletedSets({
-  logs, editingIndex, onEdit, onUpdate,
+  logs, lastSetByKey, editingIndex, onEdit, onUpdate,
 }: {
   logs: SetLog[];
+  lastSetByKey: Map<string, { actualWeight: string; actualReps: number }>;
   editingIndex: number | null;
   onEdit: (i: number) => void;
   onUpdate: (i: number, reps: number) => void;
@@ -414,44 +423,52 @@ function CompletedSets({
   return (
     <div style={{ marginTop: 24 }}>
       <div style={{ fontSize: '14px', color: '#aaa', marginBottom: 8 }}>已完成组</div>
-      {logs.map((log, i) => (
-        <div key={i} style={{
-          background: '#16213e', borderRadius: 8, padding: '8px 12px',
-          marginBottom: 6, display: 'flex', justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <div>
-            <span style={{ fontSize: '13px' }}>{log.exerciseName}</span>
-            <span style={{ fontSize: '12px', color: '#888', marginLeft: 8 }}>
-              第{log.setIndex}组 · {log.actualWeight}
-            </span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {editingIndex === i ? (
-              <input
-                type="number"
-                inputMode="numeric"
-                defaultValue={log.actualReps}
-                style={{ ...inputStyle, width: 60, padding: '4px 8px' }}
-                onBlur={e => onUpdate(i, parseInt(e.target.value, 10) || 0)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') {
-                    onUpdate(i, parseInt((e.target as HTMLInputElement).value, 10) || 0);
-                  }
-                }}
-                autoFocus
-              />
-            ) : (
-              <span
-                style={{ fontSize: '14px', color: '#e94560', cursor: 'pointer' }}
-                onClick={() => onEdit(i)}
-              >
-                {log.actualReps}次
+      {logs.map((log, i) => {
+        const lastData = lastSetByKey.get(`${log.exerciseId}-${log.setIndex}`);
+        return (
+          <div key={i} style={{
+            background: '#16213e', borderRadius: 8, padding: '8px 12px',
+            marginBottom: 6, display: 'flex', justifyContent: 'space-between',
+            alignItems: 'center',
+          }}>
+            <div>
+              <span style={{ fontSize: '13px' }}>{log.exerciseName}</span>
+              <span style={{ fontSize: '12px', color: '#888', marginLeft: 8 }}>
+                第{log.setIndex}组 · {simplifyWeight(log.actualWeight)}
               </span>
-            )}
+              {lastData && (
+                <span style={{ fontSize: '11px', color: '#e94560', marginLeft: 8 }}>
+                  上次 {simplifyWeight(lastData.actualWeight)} × {lastData.actualReps}次
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {editingIndex === i ? (
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  defaultValue={log.actualReps}
+                  style={{ ...inputStyle, width: 60, padding: '4px 8px' }}
+                  onBlur={e => onUpdate(i, parseInt(e.target.value, 10) || 0)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      onUpdate(i, parseInt((e.target as HTMLInputElement).value, 10) || 0);
+                    }
+                  }}
+                  autoFocus
+                />
+              ) : (
+                <span
+                  style={{ fontSize: '14px', color: '#e94560', cursor: 'pointer' }}
+                  onClick={() => onEdit(i)}
+                >
+                  {log.actualReps}次
+                </span>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
