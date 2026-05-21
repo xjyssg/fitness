@@ -44,6 +44,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
   const [weightIsKg, setWeightIsKg] = useState(true);
   const [repError, setRepError] = useState(false);
   const [editingSetIndex, setEditingSetIndex] = useState<number | null>(null);
+  const [editingWeightIndex, setEditingWeightIndex] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const vibrateRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const repInputRef = useRef<HTMLInputElement>(null);
@@ -199,6 +200,15 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
     setEditingSetIndex(null);
   };
 
+  const handleUpdateWeight = (index: number, newWeight: string) => {
+    if (!newWeight.trim()) return;
+    const updatedLogs = workoutState.completedSetLogs.map((log, i) =>
+      i === index ? { ...log, actualWeight: newWeight } : log
+    );
+    onUpdateState({ ...workoutState, completedSetLogs: updatedLogs });
+    setEditingWeightIndex(null);
+  };
+
   // ===== 1. 备选动作选择器 =====
   if (optionBlockIndex !== null) {
     const block = workoutState.allBlocks[optionBlockIndex] as Extract<Block, { options: ExerciseBlock[] }>;
@@ -260,7 +270,9 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
         })}
         {workoutState.completedSetLogs.length > 0 && (
           <CompletedSets logs={workoutState.completedSetLogs} lastSetByKey={lastSetByKey}
-            editingIndex={editingSetIndex} onEdit={setEditingSetIndex} onUpdate={handleUpdateReps} />
+            editingIndex={editingSetIndex} editingWeightIndex={editingWeightIndex}
+            onEdit={setEditingSetIndex} onEditWeight={setEditingWeightIndex}
+            onUpdate={handleUpdateReps} onUpdateWeight={handleUpdateWeight} />
         )}
       </div>
     );
@@ -351,18 +363,23 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
 
       {workoutState.completedSetLogs.length > 0 && (
         <CompletedSets logs={workoutState.completedSetLogs} lastSetByKey={lastSetByKey}
-          editingIndex={editingSetIndex} onEdit={setEditingSetIndex} onUpdate={handleUpdateReps} />
+          editingIndex={editingSetIndex} editingWeightIndex={editingWeightIndex}
+          onEdit={setEditingSetIndex} onEditWeight={setEditingWeightIndex}
+          onUpdate={handleUpdateReps} onUpdateWeight={handleUpdateWeight} />
       )}
     </div>
   );
 }
 
-function CompletedSets({ logs, lastSetByKey, editingIndex, onEdit, onUpdate }: {
+function CompletedSets({ logs, lastSetByKey, editingIndex, editingWeightIndex, onEdit, onEditWeight, onUpdate, onUpdateWeight }: {
   logs: SetLog[];
   lastSetByKey: Map<string, { actualWeight: string; actualReps: number }>;
   editingIndex: number | null;
+  editingWeightIndex: number | null;
   onEdit: (i: number) => void;
+  onEditWeight: (i: number) => void;
   onUpdate: (i: number, reps: number) => void;
+  onUpdateWeight: (i: number, weight: string) => void;
 }) {
   return (
     <div style={{ marginTop: 24 }}>
@@ -374,7 +391,18 @@ function CompletedSets({ logs, lastSetByKey, editingIndex, onEdit, onUpdate }: {
             <div>
               <span style={{ fontSize: '13px' }}>{log.exerciseName}</span>
               <span style={{ fontSize: '12px', color: '#888', marginLeft: 8 }}>
-                第{log.setIndex}组 · {simplifyWeight(log.actualWeight)}
+                第{log.setIndex}组 ·{' '}
+                {editingWeightIndex === i ? (
+                  <input type="text" defaultValue={log.actualWeight}
+                    style={{ ...editInlineStyle, width: 80 }}
+                    onBlur={e => onUpdateWeight(i, e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') onUpdateWeight(i, (e.target as HTMLInputElement).value); }}
+                    autoFocus />
+                ) : (
+                  <span style={{ color: '#e94560', cursor: 'pointer' }} onClick={() => onEditWeight(i)}>
+                    {simplifyWeight(log.actualWeight)}
+                  </span>
+                )}
               </span>
               {lastData && (
                 <span style={{ fontSize: '11px', color: '#e94560', marginLeft: 8 }}>
@@ -385,7 +413,7 @@ function CompletedSets({ logs, lastSetByKey, editingIndex, onEdit, onUpdate }: {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {editingIndex === i ? (
                 <input type="number" inputMode="numeric" defaultValue={log.actualReps}
-                  style={{ ...inputStyle, width: 60, padding: '4px 8px' }}
+                  style={{ ...editInlineStyle, width: 60 }}
                   onBlur={e => onUpdate(i, parseInt(e.target.value, 10) || 0)}
                   onKeyDown={e => { if (e.key === 'Enter') onUpdate(i, parseInt((e.target as HTMLInputElement).value, 10) || 0); }}
                   autoFocus />
@@ -427,4 +455,5 @@ const exitBtn: React.CSSProperties = { background: 'none', color: '#888', fontSi
 const btnPrimary: React.CSSProperties = { background: '#e94560', color: '#fff', padding: '14px 32px', borderRadius: 8, fontSize: '18px', fontWeight: 600, width: '100%', maxWidth: 280 };
 const btnSecondary: React.CSSProperties = { background: '#0f3460', color: '#fff', padding: '10px 24px', borderRadius: 8, fontSize: '14px', width: '100%', maxWidth: 200, margin: '0 auto', display: 'block' };
 const inputStyle: React.CSSProperties = { display: 'block', margin: '12px auto 0', padding: '10px 16px', borderRadius: 8, border: '1px solid #333', background: '#16213e', color: '#fff', fontSize: '16px', width: '100%', maxWidth: 200, textAlign: 'center' };
+const editInlineStyle: React.CSSProperties = { padding: '4px 8px', borderRadius: 4, border: '1px solid #e94560', background: '#1a1a2e', color: '#fff', fontSize: '13px', textAlign: 'center' };
 const completedRow: React.CSSProperties = { background: '#16213e', borderRadius: 8, padding: '8px 12px', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' };

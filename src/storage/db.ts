@@ -69,6 +69,11 @@ export async function deleteIncompleteWorkout(): Promise<void> {
   await db.delete('incompleteWorkout', INCOMPLETE_KEY);
 }
 
+export async function deleteSession(sessionId: string): Promise<void> {
+  const db = await getDb();
+  await db.delete('sessions', sessionId);
+}
+
 export async function clearAll(): Promise<void> {
   const db = await getDb();
   await db.clear('meta');
