@@ -7,6 +7,9 @@ import {
 import { saveIncompleteWorkout } from '../storage/db';
 import { playBeep } from '../reminders/reminder';
 
+const DEBUG_MODE = new URLSearchParams(window.location.search).has('debug');
+const DEBUG_REST_SECONDS = 3;
+
 interface Props {
   workoutState: WorkoutState;
   sessions: WorkoutSession[];
@@ -133,7 +136,17 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
       ? buildWeight(weightPrefix, weightInput)
       : weightInput;
 
-    const next = completeSet(workoutState, repsNum, actualWeight);
+    let next = completeSet(workoutState, repsNum, actualWeight);
+
+    // Debug 模式：倒计时固定 3 秒
+    if (DEBUG_MODE && next.phase === 'rest') {
+      const now = new Date();
+      next = {
+        ...next,
+        restEndsAt: new Date(now.getTime() + DEBUG_REST_SECONDS * 1000).toISOString(),
+      };
+    }
+
     onUpdateState(next);
     setRepInput('');
 
@@ -143,7 +156,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
     }
 
     if (next.phase === 'rest') {
-      const restMs = (current?.set.restSeconds || 60) * 1000;
+      const restMs = DEBUG_MODE ? DEBUG_REST_SECONDS * 1000 : (current?.set.restSeconds || 60) * 1000;
       if (vibrateRef.current) clearTimeout(vibrateRef.current);
       vibrateRef.current = setTimeout(() => {
         try { navigator.vibrate?.([300, 150, 300]); } catch {}
@@ -264,6 +277,12 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
     <div>
       <div style={{ fontSize: '18px', fontWeight: 600, textAlign: 'center', marginBottom: 4 }}>
         {workoutState.session.dayName}
+        {DEBUG_MODE && (
+          <span style={{
+            background: '#ff9800', color: '#000', fontSize: '11px', padding: '2px 6px',
+            borderRadius: 4, marginLeft: 8, verticalAlign: 'middle',
+          }}>DEBUG {DEBUG_REST_SECONDS}s</span>
+        )}
       </div>
 
       {workoutState.phase === 'active' && current && (
