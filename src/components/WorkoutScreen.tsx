@@ -200,8 +200,6 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
           const name = 'options' in block ? block.name : block.name;
           const firstBlock = 'options' in block ? block.options[0] : block;
           const firstSet = firstBlock.sets[0];
-          // 查找上次记录
-          const lastData = lastSetByKey.get(`${firstBlock.exerciseId}-1`);
           return (
             <button
               key={origIdx}
@@ -214,11 +212,6 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
                   ? `${block.options.length} 个备选 · ${block.options[0].sets.length} 组`
                   : `${block.sets.length} 组 · ${firstSet.plannedWeight}`
                 }
-                {lastData && (
-                  <span style={{ color: '#e94560', marginLeft: 8 }}>
-                    上次 {lastData.actualWeight} × {lastData.actualReps}
-                  </span>
-                )}
               </div>
             </button>
           );
@@ -248,23 +241,16 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
         <div style={{ fontSize: '14px', color: '#aaa', marginBottom: 12, textAlign: 'center' }}>
           选择执行动作
         </div>
-        {block.options.map(opt => {
-          const lastData = lastSetByKey.get(`${opt.exerciseId}-1`);
-          return (
-            <button
-              key={opt.exerciseId}
-              onClick={() => handleOptionSelect(opt.exerciseId)}
-              style={blockCardStyle}
-            >
-              <div style={{ fontSize: '16px', fontWeight: 600 }}>{opt.name}</div>
-              <div style={{ fontSize: '12px', color: '#888', marginTop: 4 }}>
-                {opt.sets.length} 组 · {opt.sets[0].plannedWeight} · {opt.sets[0].targetReps}次
-                {lastData && (
-                  <span style={{ color: '#e94560', marginLeft: 8 }}>
-                    上次 {lastData.actualWeight} × {lastData.actualReps}
-                  </span>
-                )}
-              </div>
+        {block.options.map(opt => (
+          <button
+            key={opt.exerciseId}
+            onClick={() => handleOptionSelect(opt.exerciseId)}
+            style={blockCardStyle}
+          >
+            <div style={{ fontSize: '16px', fontWeight: 600 }}>{opt.name}</div>
+            <div style={{ fontSize: '12px', color: '#888', marginTop: 4 }}>
+              {opt.sets.length} 组 · {opt.sets[0].plannedWeight} · {opt.sets[0].targetReps}次
+            </div>
               {opt.primaryMuscles && (
                 <div style={{ marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {opt.primaryMuscles.map(m => (
@@ -273,8 +259,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
                 </div>
               )}
             </button>
-          );
-        })}
+        ))}
       </div>
     );
   }
