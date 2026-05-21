@@ -97,7 +97,7 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
   }, [workoutState.phase, workoutState.restEndsAt]);
 
   useEffect(() => {
-    saveIncompleteWorkout(workoutState);
+    if (!DEBUG_MODE) saveIncompleteWorkout(workoutState);
   }, [workoutState]);
 
   useEffect(() => {

@@ -76,20 +76,24 @@ export default function App() {
     }
   }, []);
 
+  const isDebug = new URLSearchParams(window.location.search).has('debug');
+
   const handleStartWorkout = useCallback(async (workoutState: WorkoutState) => {
-    await deleteIncompleteWorkout(); // 开始新训练前清理旧残留
+    if (!isDebug) await deleteIncompleteWorkout();
     setState(s => ({ ...s, screen: 'workout', workoutState }));
-  }, []);
+  }, [isDebug]);
 
   const handleStartCardio = useCallback(async (workoutState: WorkoutState) => {
-    await deleteIncompleteWorkout();
+    if (!isDebug) await deleteIncompleteWorkout();
     setState(s => ({ ...s, screen: 'cardio', workoutState }));
-  }, []);
+  }, [isDebug]);
 
   const handleWorkoutComplete = useCallback(async (session: WorkoutSession) => {
-    await saveSession(session);
-    await deleteIncompleteWorkout();
-    const sessions = await getSessions();
+    if (!isDebug) {
+      await saveSession(session);
+      await deleteIncompleteWorkout();
+    }
+    const sessions = isDebug ? state.sessions : await getSessions();
     setState(s => ({
       ...s,
       screen: 'summary',
