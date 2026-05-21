@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import type { WorkoutState, WorkoutSession, Block, ExerciseBlock } from '../types';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import type { WorkoutState, WorkoutSession, Block, ExerciseBlock, SetLog } from '../types';
 import {
   selectBlock, completeSet, startNextSet, getRemainingRestSeconds,
   updateActualReps, SET_KIND_LABELS,
@@ -9,15 +9,32 @@ import { playBeep } from '../reminders/reminder';
 
 interface Props {
   workoutState: WorkoutState;
+  sessions: WorkoutSession[];
   onUpdateState: (state: WorkoutState) => void;
   onComplete: (session: WorkoutSession) => void;
 }
 
-export default function WorkoutScreen({ workoutState, onUpdateState, onComplete }: Props) {
+/** 从计划重量中提取前缀和数值，如 "两边各7.5kg" → { prefix: "两边各", number: "7.5" } */
+function parseWeight(weight: string): { prefix: string; number: string; isKg: boolean } {
+  const match = weight.match(/^([一-龥]*)\s*([\d.]+)\s*kg\s*$/);
+  if (match) return { prefix: match[1], number: match[2], isKg: true };
+  return { prefix: '', number: weight, isKg: false };
+}
+
+function buildWeight(prefix: string, number: string): string {
+  const trimmed = number.trim();
+  if (!trimmed) return prefix || '';
+  if (prefix) return `${prefix}${trimmed}kg`;
+  return `${trimmed}kg`;
+}
+
+export default function WorkoutScreen({ workoutState, sessions, onUpdateState, onComplete }: Props) {
   const [restSeconds, setRestSeconds] = useState(0);
   const [restComplete, setRestComplete] = useState(false);
   const [repInput, setRepInput] = useState('');
   const [weightInput, setWeightInput] = useState('');
+  const [weightPrefix, setWeightPrefix] = useState('');
+  const [weightIsKg, setWeightIsKg] = useState(true);
   const [repError, setRepError] = useState(false);
   const [editingSetIndex, setEditingSetIndex] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -30,10 +47,28 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
   const isLastBlock = workoutState.remainingBlockIndices.length === 1;
   const isLastSet = isLastSetInBlock && isLastBlock;
 
-  // 当前组切换时预填计划重量
+  // 同训练日、同计划的历史记录，按 exerciseId 索引最近一次数据
+  const lastSessionByExercise = useMemo(() => {
+    const map = new Map<string, { actualWeight: string; actualReps: number }>();
+    for (const s of sessions) {
+      if (s.dayId !== workoutState.session.dayId) continue;
+      if (!s.setLogs) continue;
+      for (const log of s.setLogs) {
+        if (!map.has(log.exerciseId)) {
+          map.set(log.exerciseId, { actualWeight: log.actualWeight, actualReps: log.actualReps });
+        }
+      }
+    }
+    return map;
+  }, [sessions, workoutState.session.dayId]);
+
+  // 当前组切换时预填计划重量（只提取数值部分）
   useEffect(() => {
     if (current) {
-      setWeightInput(current.set.plannedWeight);
+      const { prefix, number, isKg } = parseWeight(current.set.plannedWeight);
+      setWeightPrefix(prefix);
+      setWeightInput(number);
+      setWeightIsKg(isKg);
     }
   }, [workoutState.currentBlockIndex, workoutState.currentFlatIndex]);
 
@@ -93,7 +128,12 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
       return;
     }
     setRepError(false);
-    const next = completeSet(workoutState, repsNum, weightInput || current?.set.plannedWeight);
+
+    const actualWeight = weightIsKg
+      ? buildWeight(weightPrefix, weightInput)
+      : weightInput;
+
+    const next = completeSet(workoutState, repsNum, actualWeight);
     onUpdateState(next);
     setRepInput('');
 
@@ -102,7 +142,6 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
       return;
     }
 
-    // 只有进入休息时才设置倒计时提醒
     if (next.phase === 'rest') {
       const restMs = (current?.set.restSeconds || 60) * 1000;
       if (vibrateRef.current) clearTimeout(vibrateRef.current);
@@ -111,7 +150,7 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
         playBeep();
       }, restMs);
     }
-  }, [repInput, weightInput, workoutState, current, onUpdateState, onComplete]);
+  }, [repInput, weightInput, weightIsKg, weightPrefix, workoutState, current, onUpdateState, onComplete]);
 
   const handleNextSet = useCallback(() => {
     if (vibrateRef.current) clearTimeout(vibrateRef.current);
@@ -140,7 +179,10 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
         {remaining.map((block, idx) => {
           const origIdx = workoutState.remainingBlockIndices[idx];
           const name = 'options' in block ? block.name : block.name;
-          const firstSet = 'options' in block ? block.options[0].sets[0] : block.sets[0];
+          const firstBlock = 'options' in block ? block.options[0] : block;
+          const firstSet = firstBlock.sets[0];
+          // 查找上次记录
+          const lastData = lastSessionByExercise.get(firstBlock.exerciseId);
           return (
             <button
               key={origIdx}
@@ -151,8 +193,13 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
               <div style={{ fontSize: '12px', color: '#888', marginTop: 4 }}>
                 {'options' in block
                   ? `${block.options.length} 个备选 · ${block.options[0].sets.length} 组`
-                  : `${block.sets.length} 组 · ${SET_KIND_LABELS[firstSet.kind] || firstSet.kind}`
+                  : `${block.sets.length} 组 · ${firstSet.plannedWeight}`
                 }
+                {lastData && (
+                  <span style={{ color: '#e94560', marginLeft: 8 }}>
+                    上次 {lastData.actualWeight} × {lastData.actualReps}
+                  </span>
+                )}
               </div>
             </button>
           );
@@ -181,25 +228,33 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
         <div style={{ fontSize: '14px', color: '#aaa', marginBottom: 12, textAlign: 'center' }}>
           选择执行动作
         </div>
-        {block.options.map(opt => (
-          <button
-            key={opt.exerciseId}
-            onClick={() => handleOptionSelect(opt.exerciseId)}
-            style={blockCardStyle}
-          >
-            <div style={{ fontSize: '16px', fontWeight: 600 }}>{opt.name}</div>
-            <div style={{ fontSize: '12px', color: '#888', marginTop: 4 }}>
-              {opt.sets.length} 组 · {opt.sets[0].plannedWeight} · {opt.sets[0].targetReps}次
-            </div>
-            {opt.primaryMuscles && (
-              <div style={{ marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                {opt.primaryMuscles.map(m => (
-                  <span key={m} style={muscleTagStyle}>{m}</span>
-                ))}
+        {block.options.map(opt => {
+          const lastData = lastSessionByExercise.get(opt.exerciseId);
+          return (
+            <button
+              key={opt.exerciseId}
+              onClick={() => handleOptionSelect(opt.exerciseId)}
+              style={blockCardStyle}
+            >
+              <div style={{ fontSize: '16px', fontWeight: 600 }}>{opt.name}</div>
+              <div style={{ fontSize: '12px', color: '#888', marginTop: 4 }}>
+                {opt.sets.length} 组 · {opt.sets[0].plannedWeight} · {opt.sets[0].targetReps}次
+                {lastData && (
+                  <span style={{ color: '#e94560', marginLeft: 8 }}>
+                    上次 {lastData.actualWeight} × {lastData.actualReps}
+                  </span>
+                )}
               </div>
-            )}
-          </button>
-        ))}
+              {opt.primaryMuscles && (
+                <div style={{ marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  {opt.primaryMuscles.map(m => (
+                    <span key={m} style={muscleTagStyle}>{m}</span>
+                  ))}
+                </div>
+              )}
+            </button>
+          );
+        })}
       </div>
     );
   }
@@ -222,9 +277,15 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
             <div style={{ display: 'flex', gap: 16, marginTop: 12, flexWrap: 'wrap' }}>
               <Tag label="组别" value={`第 ${current.setIndex + 1} 组 / 共 ${workoutState.flatSets.length} 组`} />
               <Tag label="类型" value={SET_KIND_LABELS[current.set.kind] || current.set.kind} />
-              <Tag label="重量" value={current.set.plannedWeight} />
+              <Tag label="计划重量" value={current.set.plannedWeight} />
               <Tag label="目标" value={`${current.set.targetReps} 次`} />
             </div>
+
+            {lastSessionByExercise.get(current.block.exerciseId) && (
+              <div style={{ marginTop: 8, fontSize: '12px', color: '#e94560' }}>
+                上次：{lastSessionByExercise.get(current.block.exerciseId)!.actualWeight} × {lastSessionByExercise.get(current.block.exerciseId)!.actualReps}次
+              </div>
+            )}
 
             {current.block.primaryMuscles && current.block.primaryMuscles.length > 0 && (
               <div style={{ marginTop: 12, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -247,15 +308,18 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
           <div style={{ marginTop: 20, textAlign: 'center' }}>
             <div style={{ marginTop: 12, marginBottom: 12, display: 'flex', gap: 12, justifyContent: 'center' }}>
               <div>
-                <label style={{ fontSize: '14px', color: '#aaa' }}>实际重量</label>
+                <label style={{ fontSize: '14px', color: '#aaa' }}>
+                  实际重量{weightIsKg ? ' (kg)' : ''}
+                </label>
                 <input
-                  type="text"
+                  type="number"
+                  inputMode="decimal"
                   value={weightInput}
                   onChange={e => setWeightInput(e.target.value)}
-                  placeholder="输入实际重量"
+                  placeholder={weightIsKg ? '数字' : '重量'}
                   style={{
                     ...inputStyle,
-                    maxWidth: 140,
+                    maxWidth: 100,
                     marginTop: 4,
                   }}
                 />
@@ -268,11 +332,11 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
                   inputMode="numeric"
                   value={repInput}
                   onChange={e => { setRepInput(e.target.value); setRepError(false); }}
-                  placeholder="输入实际次数"
+                  placeholder="次数"
                   style={{
                     ...inputStyle,
                     borderColor: repError ? '#e94560' : '#333',
-                    maxWidth: 100,
+                    maxWidth: 80,
                     marginTop: 4,
                     marginBottom: 4,
                   }}
@@ -323,7 +387,7 @@ export default function WorkoutScreen({ workoutState, onUpdateState, onComplete 
 function CompletedSets({
   logs, editingIndex, onEdit, onUpdate,
 }: {
-  logs: import('../types').SetLog[];
+  logs: SetLog[];
   editingIndex: number | null;
   onEdit: (i: number) => void;
   onUpdate: (i: number, reps: number) => void;
@@ -340,7 +404,7 @@ function CompletedSets({
           <div>
             <span style={{ fontSize: '13px' }}>{log.exerciseName}</span>
             <span style={{ fontSize: '12px', color: '#888', marginLeft: 8 }}>
-              第{log.setIndex}组 · {SET_KIND_LABELS[log.setKind]}
+              第{log.setIndex}组 · {log.actualWeight}
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

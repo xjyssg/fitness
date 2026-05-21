@@ -131,6 +131,7 @@ export default function App() {
         return state.workoutState ? (
           <WorkoutScreen
             workoutState={state.workoutState}
+            sessions={state.sessions}
             onUpdateState={ws => setState(s => ({ ...s, workoutState: ws }))}
             onComplete={handleWorkoutComplete}
           />
