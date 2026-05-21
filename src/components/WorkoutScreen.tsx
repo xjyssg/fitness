@@ -15,9 +15,10 @@ interface Props {
   sessions: WorkoutSession[];
   onUpdateState: (state: WorkoutState) => void;
   onComplete: (session: WorkoutSession) => void;
+  onExit: (state: WorkoutState) => void;
 }
 
-/** 从计划重量中提取前缀和数值，如 "两边各7.5kg" → { prefix: "两边各", number: "7.5" } */
+/** 从计划重量中提取前缀和数值 */
 function parseWeight(weight: string): { prefix: string; number: string; isKg: boolean } {
   const match = weight.match(/^([一-龥]*)\s*([\d.]+)\s*kg\s*$/);
   if (match) return { prefix: match[1], number: match[2], isKg: true };
@@ -31,12 +32,11 @@ function buildWeight(prefix: string, number: string): string {
   return `${trimmed}kg`;
 }
 
-/** 简化重量显示：去掉中文前缀，只保留数字+单位 */
 function simplifyWeight(weight: string): string {
   return weight.replace(/^[一-龥]+/, '');
 }
 
-export default function WorkoutScreen({ workoutState, sessions, onUpdateState, onComplete }: Props) {
+export default function WorkoutScreen({ workoutState, sessions, onUpdateState, onComplete, onExit }: Props) {
   const [restSeconds, setRestSeconds] = useState(0);
   const [restComplete, setRestComplete] = useState(false);
   const [repInput, setRepInput] = useState('');
@@ -55,7 +55,6 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
   const isLastBlock = workoutState.remainingBlockIndices.length === 1;
   const isLastSet = isLastSetInBlock && isLastBlock;
 
-  // 同训练日、同计划的历史记录，按 exerciseId-setIndex 索引每组数据
   const lastSetByKey = useMemo(() => {
     const map = new Map<string, { actualWeight: string; actualReps: number }>();
     for (const s of sessions) {
@@ -71,7 +70,6 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
     return map;
   }, [sessions, workoutState.session.dayId]);
 
-  // 当前组切换时预填计划重量（只提取数值部分）
   useEffect(() => {
     if (current) {
       const { prefix, number, isKg } = parseWeight(current.set.plannedWeight);
@@ -81,7 +79,6 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
     }
   }, [workoutState.currentBlockIndex, workoutState.currentFlatIndex]);
 
-  // 倒计时显示
   useEffect(() => {
     if (workoutState.phase === 'rest') {
       setRestComplete(false);
@@ -129,6 +126,47 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
     setOptionBlockIndex(null);
   }, [workoutState, optionBlockIndex, onUpdateState]);
 
+  const handleOptionBack = useCallback(() => {
+    setOptionBlockIndex(null);
+  }, []);
+
+  // 放弃当前动作，回到选择列表（保留已完成组）
+  const handleBackToList = useCallback(() => {
+    if (vibrateRef.current) clearTimeout(vibrateRef.current);
+    const next: WorkoutState = {
+      ...workoutState,
+      currentBlockIndex: null,
+      flatSets: [],
+      currentFlatIndex: 0,
+      phase: 'active',
+      restStartedAt: null,
+      restEndsAt: null,
+    };
+    onUpdateState(next);
+    setRepInput('');
+  }, [workoutState, onUpdateState]);
+
+  // 跳过休息倒计时
+  const handleSkipRest = useCallback(() => {
+    if (vibrateRef.current) clearTimeout(vibrateRef.current);
+    if (timerRef.current) clearInterval(timerRef.current);
+    setRestComplete(true);
+    setRestSeconds(0);
+  }, []);
+
+  // 退出训练
+  const handleExit = useCallback(() => {
+    if (workoutState.completedSetLogs.length > 0) {
+      if (confirm('是否保存已完成组并退出训练？')) {
+        onExit(workoutState);
+        return;
+      }
+    }
+    if (confirm('确定退出训练？已完成组将丢失。')) {
+      onExit({ ...workoutState, completedSetLogs: [] });
+    }
+  }, [workoutState, onExit]);
+
   const handleCompleteSet = useCallback(() => {
     const repsNum = parseInt(repInput, 10);
     if (!repInput.trim() || isNaN(repsNum) || repsNum <= 0) {
@@ -144,7 +182,6 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
 
     let next = completeSet(workoutState, repsNum, actualWeight);
 
-    // Debug 模式：倒计时固定 3 秒
     if (DEBUG_MODE && next.phase === 'rest') {
       const now = new Date();
       next = {
@@ -189,8 +226,10 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
     const remaining = workoutState.remainingBlockIndices.map(i => workoutState.allBlocks[i]);
     return (
       <div>
-        <div style={{ fontSize: '18px', fontWeight: 600, textAlign: 'center', marginBottom: 16 }}>
-          {workoutState.session.dayName}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <button onClick={handleExit} style={exitBtn}>退出训练</button>
+          <div style={{ fontSize: '18px', fontWeight: 600 }}>{workoutState.session.dayName}</div>
+          <div style={{ width: 60 }} />
         </div>
         <div style={{ fontSize: '14px', color: '#aaa', marginBottom: 12, textAlign: 'center' }}>
           选择下一个动作
@@ -235,8 +274,10 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
     const block = workoutState.allBlocks[optionBlockIndex] as Extract<Block, { options: ExerciseBlock[] }>;
     return (
       <div>
-        <div style={{ fontSize: '18px', fontWeight: 600, textAlign: 'center', marginBottom: 16 }}>
-          {block.name}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <button onClick={handleOptionBack} style={backBtn}>← 返回</button>
+          <div style={{ fontSize: '18px', fontWeight: 600 }}>{block.name}</div>
+          <div style={{ width: 60 }} />
         </div>
         <div style={{ fontSize: '14px', color: '#aaa', marginBottom: 12, textAlign: 'center' }}>
           选择执行动作
@@ -251,14 +292,14 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
             <div style={{ fontSize: '12px', color: '#888', marginTop: 4 }}>
               {opt.sets.length} 组 · {opt.sets[0].plannedWeight} · {opt.sets[0].targetReps}次
             </div>
-              {opt.primaryMuscles && (
-                <div style={{ marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  {opt.primaryMuscles.map(m => (
-                    <span key={m} style={muscleTagStyle}>{m}</span>
-                  ))}
-                </div>
-              )}
-            </button>
+            {opt.primaryMuscles && (
+              <div style={{ marginTop: 4, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                {opt.primaryMuscles.map(m => (
+                  <span key={m} style={muscleTagStyle}>{m}</span>
+                ))}
+              </div>
+            )}
+          </button>
         ))}
       </div>
     );
@@ -267,20 +308,24 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
   // ===== 正常执行模式 =====
   return (
     <div>
-      <div style={{ fontSize: '18px', fontWeight: 600, textAlign: 'center', marginBottom: 4 }}>
-        {workoutState.session.dayName}
-        {DEBUG_MODE && (
-          <span style={{
-            background: '#ff9800', color: '#000', fontSize: '11px', padding: '2px 6px',
-            borderRadius: 4, marginLeft: 8, verticalAlign: 'middle',
-          }}>DEBUG {DEBUG_REST_SECONDS}s</span>
-        )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <button onClick={handleBackToList} style={backBtn}>← 动作列表</button>
+        <div style={{ fontSize: '18px', fontWeight: 600, textAlign: 'center' }}>
+          {workoutState.session.dayName}
+          {DEBUG_MODE && (
+            <span style={{
+              background: '#ff9800', color: '#000', fontSize: '11px', padding: '2px 6px',
+              borderRadius: 4, marginLeft: 8, verticalAlign: 'middle',
+            }}>DEBUG {DEBUG_REST_SECONDS}s</span>
+          )}
+        </div>
+        <button onClick={handleExit} style={exitBtn}>退出</button>
       </div>
 
       {workoutState.phase === 'active' && current && (
         <>
           <div style={{
-            background: '#16213e', borderRadius: 12, padding: 20, marginTop: 16,
+            background: '#16213e', borderRadius: 12, padding: 20, marginTop: 0,
           }}>
             <div style={{ fontSize: '14px', color: '#aaa' }}>当前动作</div>
             <div style={{ fontSize: '22px', fontWeight: 700, marginTop: 4 }}>{current.block.name}</div>
@@ -373,13 +418,20 @@ export default function WorkoutScreen({ workoutState, sessions, onUpdateState, o
             {restSeconds > 0 ? '剩余休息时间' : '休息完成'}
           </div>
 
-          {restComplete && (
-            <div style={{ marginTop: 20 }}>
-              <button onClick={handleNextSet} style={btnPrimary}>
-                开始下一组
+          <div style={{ marginTop: 20 }}>
+            {restSeconds > 0 && (
+              <button onClick={handleSkipRest} style={{ ...btnSecondary, marginBottom: 12 }}>
+                跳过休息
               </button>
-            </div>
-          )}
+            )}
+            {restComplete && (
+              <div>
+                <button onClick={handleNextSet} style={btnPrimary}>
+                  开始下一组
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -494,6 +546,16 @@ const muscleTagSecondaryStyle: React.CSSProperties = {
   borderRadius: 4, fontSize: '12px',
 };
 
+const backBtn: React.CSSProperties = {
+  background: 'none', color: '#e94560', fontSize: '14px', border: 'none',
+  cursor: 'pointer', padding: '4px 0',
+};
+
+const exitBtn: React.CSSProperties = {
+  background: 'none', color: '#888', fontSize: '13px', border: 'none',
+  cursor: 'pointer', padding: '4px 0',
+};
+
 const btnPrimary: React.CSSProperties = {
   background: '#e94560',
   color: '#fff',
@@ -503,6 +565,18 @@ const btnPrimary: React.CSSProperties = {
   fontWeight: 600,
   width: '100%',
   maxWidth: 280,
+};
+
+const btnSecondary: React.CSSProperties = {
+  background: '#0f3460',
+  color: '#fff',
+  padding: '10px 24px',
+  borderRadius: 8,
+  fontSize: '14px',
+  width: '100%',
+  maxWidth: 200,
+  margin: '0 auto',
+  display: 'block',
 };
 
 const inputStyle: React.CSSProperties = {

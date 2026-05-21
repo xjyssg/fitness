@@ -88,6 +88,19 @@ export default function App() {
     setState(s => ({ ...s, screen: 'cardio', workoutState }));
   }, [isDebug]);
 
+  const handleWorkoutExit = useCallback(async (workoutState: WorkoutState) => {
+    if (!isDebug && workoutState.completedSetLogs.length > 0) {
+      await saveSession({
+        ...workoutState.session,
+        finishedAt: new Date().toISOString(),
+        setLogs: workoutState.completedSetLogs,
+      });
+    }
+    if (!isDebug) await deleteIncompleteWorkout();
+    const sessions = isDebug ? state.sessions : await getSessions();
+    setState(s => ({ ...s, screen: 'home', workoutState: null, sessions }));
+  }, [isDebug, state.sessions]);
+
   const handleWorkoutComplete = useCallback(async (session: WorkoutSession) => {
     if (!isDebug) {
       await saveSession(session);
@@ -138,6 +151,7 @@ export default function App() {
             sessions={state.sessions}
             onUpdateState={ws => setState(s => ({ ...s, workoutState: ws }))}
             onComplete={handleWorkoutComplete}
+            onExit={handleWorkoutExit}
           />
         ) : null;
       case 'cardio':
