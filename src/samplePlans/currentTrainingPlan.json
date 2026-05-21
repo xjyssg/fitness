@@ -10,234 +10,61 @@
         {
           "exerciseId": "smith-bench",
           "name": "史密斯卧推",
-          "primaryMuscles": [
-            "胸大肌整体",
-            "中胸"
-          ],
-          "secondaryMuscles": [
-            "肱三头肌",
-            "三角肌前束"
-          ],
-          "notes": "A日唯一优先动作；回退组按第8.4节选",
+          "primaryMuscles": ["胸大肌整体", "中胸"],
+          "secondaryMuscles": ["肱三头肌", "三角肌前束"],
+          "notes": "7.5kg是主工作重量；如果第2组低于6次，后两组继续5kg",
           "progressionHint": "顶组达到8次后可考虑小幅加重",
           "sets": [
-            {
-              "kind": "top",
-              "plannedWeight": "7.5",
-              "targetReps": "6-8",
-              "restSeconds": 180
-            },
-            {
-              "kind": "backoff",
-              "plannedWeight": "7.5",
-              "targetReps": "6-8",
-              "restSeconds": 180
-            },
-            {
-              "kind": "backoff",
-              "plannedWeight": "5",
-              "targetReps": "8-10",
-              "restSeconds": 180
-            },
-            {
-              "kind": "backoff",
-              "plannedWeight": "5",
-              "targetReps": "8-10",
-              "restSeconds": 180
-            }
+            { "kind": "top", "plannedWeight": "7.5", "targetReps": "6-8", "restSeconds": 180 },
+            { "kind": "backoff", "plannedWeight": "7.5", "targetReps": "6-8", "restSeconds": 180 },
+            { "kind": "backoff", "plannedWeight": "5", "targetReps": "8-10", "restSeconds": 180 },
+            { "kind": "backoff", "plannedWeight": "5", "targetReps": "8-10", "restSeconds": 180 }
           ]
         },
         {
-          "kind": "option",
-          "id": "a2-back",
-          "name": "划船动作",
-          "options": [
-            {
-              "exerciseId": "seated-row",
-              "name": "坐姿划船",
-              "primaryMuscles": [
-                "中背",
-                "菱形肌",
-                "斜方肌中下束"
-              ],
-              "secondaryMuscles": [
-                "背阔肌",
-                "肱二头肌",
-                "后三角"
-              ],
-              "notes": "控制肩胛，不耸肩",
-              "sets": [
-                {
-                  "kind": "working",
-                  "plannedWeight": "16.5",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "16.5",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "16.5",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                }
-              ]
-            },
-            {
-              "exerciseId": "chest-supported-row",
-              "name": "胸托划船",
-              "primaryMuscles": [
-                "中背",
-                "菱形肌",
-                "斜方肌中下束"
-              ],
-              "secondaryMuscles": [
-                "背阔肌",
-                "肱二头肌",
-                "后三角"
-              ],
-              "notes": "控制肩胛，不耸肩",
-              "sets": [
-                {
-                  "kind": "working",
-                  "plannedWeight": "15",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "15",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "15",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                }
-              ]
-            }
+          "exerciseId": "seated-row",
+          "name": "坐姿划船",
+          "primaryMuscles": ["中背", "菱形肌", "斜方肌中下束"],
+          "secondaryMuscles": ["背阔肌", "肱二头肌", "后三角"],
+          "notes": "先把3组都稳定做到10次以上，再考虑加重。控制肩胛，不耸肩",
+          "sets": [
+            { "kind": "working", "plannedWeight": "32", "targetReps": "8-12", "restSeconds": 120 },
+            { "kind": "working", "plannedWeight": "32", "targetReps": "8-12", "restSeconds": 120 },
+            { "kind": "working", "plannedWeight": "32", "targetReps": "8-12", "restSeconds": 120 }
           ]
         },
         {
           "exerciseId": "hack-squat",
           "name": "哈克深蹲",
-          "primaryMuscles": [
-            "股四头肌"
-          ],
-          "secondaryMuscles": [
-            "臀大肌",
-            "内收肌"
-          ],
-          "notes": "中等强度，不练到影响C日",
+          "primaryMuscles": ["股四头肌"],
+          "secondaryMuscles": ["臀大肌", "内收肌"],
+          "notes": "A日只做中等强度，不追求上12.5kg",
           "sets": [
-            {
-              "kind": "working",
-              "plannedWeight": "12.5",
-              "targetReps": "8-10",
-              "restSeconds": 150
-            },
-            {
-              "kind": "working",
-              "plannedWeight": "12.5",
-              "targetReps": "8-10",
-              "restSeconds": 150
-            },
-            {
-              "kind": "working",
-              "plannedWeight": "12.5",
-              "targetReps": "8-10",
-              "restSeconds": 150
-            }
+            { "kind": "working", "plannedWeight": "10", "targetReps": "8-10", "restSeconds": 150 },
+            { "kind": "working", "plannedWeight": "10", "targetReps": "8-10", "restSeconds": 150 },
+            { "kind": "working", "plannedWeight": "10", "targetReps": "8-10", "restSeconds": 150 }
           ]
         },
         {
-          "kind": "option",
-          "id": "a4-pulldown",
-          "name": "下拉动作",
-          "options": [
-            {
-              "exerciseId": "lat-pulldown",
-              "name": "高位下拉",
-              "primaryMuscles": [
-                "背阔肌"
-              ],
-              "secondaryMuscles": [
-                "肱二头肌",
-                "大圆肌"
-              ],
-              "notes": "肘往身体两侧下拉",
-              "sets": [
-                {
-                  "kind": "working",
-                  "plannedWeight": "26",
-                  "targetReps": "8-10",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "26",
-                  "targetReps": "8-10",
-                  "restSeconds": 120
-                }
-              ]
-            },
-            {
-              "exerciseId": "assisted-pullup",
-              "name": "辅助引体",
-              "primaryMuscles": [
-                "背阔肌"
-              ],
-              "secondaryMuscles": [
-                "肱二头肌",
-                "大圆肌"
-              ],
-              "notes": "控制节奏，底部拉伸",
-              "sets": [
-                {
-                  "kind": "working",
-                  "plannedWeight": "33",
-                  "targetReps": "8-10",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "33",
-                  "targetReps": "8-10",
-                  "restSeconds": 120
-                }
-              ]
-            }
+          "exerciseId": "lat-pulldown",
+          "name": "高位下拉",
+          "primaryMuscles": ["背阔肌"],
+          "secondaryMuscles": ["肱二头肌", "大圆肌"],
+          "notes": "保持动作稳定，不抢B日恢复",
+          "sets": [
+            { "kind": "working", "plannedWeight": "34.75", "targetReps": "8-10", "restSeconds": 120 },
+            { "kind": "working", "plannedWeight": "34.75", "targetReps": "8-10", "restSeconds": 120 }
           ]
         },
         {
           "exerciseId": "lateral-raise",
           "name": "侧平举",
-          "primaryMuscles": [
-            "三角肌中束"
-          ],
-          "secondaryMuscles": [
-            "斜方肌上束"
-          ],
-          "notes": "控制摆动",
+          "primaryMuscles": ["三角肌中束"],
+          "secondaryMuscles": ["斜方肌上束"],
+          "notes": "如果第1组仍低于12次，第2组改3kg。控制摆动",
           "sets": [
-            {
-              "kind": "accessory",
-              "plannedWeight": "5",
-              "targetReps": "12-15",
-              "restSeconds": 90
-            },
-            {
-              "kind": "accessory",
-              "plannedWeight": "5",
-              "targetReps": "12-15",
-              "restSeconds": 90
-            }
+            { "kind": "accessory", "plannedWeight": "4", "targetReps": "12-15", "restSeconds": 90 },
+            { "kind": "accessory", "plannedWeight": "4", "targetReps": "12-15", "restSeconds": 90 }
           ]
         }
       ]
@@ -248,284 +75,63 @@
       "focus": "背部主导 · 下肢辅助",
       "blocks": [
         {
-          "exerciseId": "assisted-pullup-b",
+          "exerciseId": "assisted-pullup",
           "name": "辅助引体向上",
-          "primaryMuscles": [
-            "背阔肌"
-          ],
-          "secondaryMuscles": [
-            "大圆肌",
-            "肱二头肌",
-            "前臂"
-          ],
+          "primaryMuscles": ["背阔肌"],
+          "secondaryMuscles": ["大圆肌", "肱二头肌", "前臂"],
+          "notes": "若器械没有31.5kg档位，直接用30kg",
           "progressionHint": "顶组达到8次后可减少辅助重量",
           "sets": [
-            {
-              "kind": "top",
-              "plannedWeight": "33",
-              "targetReps": "6-8",
-              "restSeconds": 180
-            },
-            {
-              "kind": "backoff",
-              "plannedWeight": "33",
-              "targetReps": "6-8",
-              "restSeconds": 180
-            },
-            {
-              "kind": "backoff",
-              "plannedWeight": "34.5",
-              "targetReps": "8-10",
-              "restSeconds": 180
-            },
-            {
-              "kind": "backoff",
-              "plannedWeight": "34.5",
-              "targetReps": "8-10",
-              "restSeconds": 180
-            }
+            { "kind": "top", "plannedWeight": "30", "targetReps": "6-8", "restSeconds": 180 },
+            { "kind": "backoff", "plannedWeight": "33", "targetReps": "8-10", "restSeconds": 180 },
+            { "kind": "backoff", "plannedWeight": "34.5", "targetReps": "8-10", "restSeconds": 180 },
+            { "kind": "backoff", "plannedWeight": "34.5", "targetReps": "8-10", "restSeconds": 180 }
           ]
         },
         {
-          "kind": "option",
-          "id": "b2-chest",
-          "name": "推胸动作",
-          "options": [
-            {
-              "exerciseId": "incline-chest-press",
-              "name": "上斜推胸",
-              "primaryMuscles": [
-                "上胸",
-                "胸大肌锁骨部"
-              ],
-              "secondaryMuscles": [
-                "三角肌前束",
-                "肱三头肌"
-              ],
-              "notes": "补足胸部角度",
-              "sets": [
-                {
-                  "kind": "working",
-                  "plannedWeight": "7.5",
-                  "targetReps": "8-10",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "7.5",
-                  "targetReps": "8-10",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "7.5",
-                  "targetReps": "8-10",
-                  "restSeconds": 120
-                }
-              ]
-            },
-            {
-              "exerciseId": "chest-press-machine",
-              "name": "器械推胸",
-              "primaryMuscles": [
-                "胸大肌整体"
-              ],
-              "secondaryMuscles": [
-                "三角肌前束",
-                "肱三头肌"
-              ],
-              "notes": "补足胸部角度",
-              "sets": [
-                {
-                  "kind": "working",
-                  "plannedWeight": "10",
-                  "targetReps": "8-10",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "10",
-                  "targetReps": "8-10",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "10",
-                  "targetReps": "8-10",
-                  "restSeconds": 120
-                }
-              ]
-            }
+          "exerciseId": "chest-press-machine",
+          "name": "器械推胸",
+          "primaryMuscles": ["胸大肌整体"],
+          "secondaryMuscles": ["三角肌前束", "肱三头肌"],
+          "notes": "B日推胸只补量，不硬撑最后一组",
+          "sets": [
+            { "kind": "working", "plannedWeight": "12.5", "targetReps": "8-10", "restSeconds": 120 },
+            { "kind": "working", "plannedWeight": "12.5", "targetReps": "8-10", "restSeconds": 120 },
+            { "kind": "working", "plannedWeight": "10", "targetReps": "8-10", "restSeconds": 120 }
           ]
         },
         {
           "exerciseId": "leg-curl",
           "name": "坐姿腿弯举",
-          "primaryMuscles": [
-            "腘绳肌"
-          ],
-          "secondaryMuscles": [
-            "小腿腓肠肌"
-          ],
-          "notes": "低腰背负担；只负责腘绳肌膝屈，不代替髋伸",
+          "primaryMuscles": ["腘绳肌"],
+          "secondaryMuscles": ["小腿腓肠肌"],
+          "notes": "如果第1组仍低于10次，当次降到更轻一档。低腰背负担",
           "sets": [
-            {
-              "kind": "working",
-              "plannedWeight": "26",
-              "targetReps": "10-12",
-              "restSeconds": 120
-            },
-            {
-              "kind": "working",
-              "plannedWeight": "26",
-              "targetReps": "10-12",
-              "restSeconds": 120
-            },
-            {
-              "kind": "working",
-              "plannedWeight": "26",
-              "targetReps": "10-12",
-              "restSeconds": 120
-            }
+            { "kind": "working", "plannedWeight": "34", "targetReps": "10-12", "restSeconds": 120 },
+            { "kind": "working", "plannedWeight": "34", "targetReps": "10-12", "restSeconds": 120 },
+            { "kind": "working", "plannedWeight": "34", "targetReps": "10-12", "restSeconds": 120 }
           ]
         },
         {
-          "kind": "option",
-          "id": "b4-row",
-          "name": "划船动作",
-          "options": [
-            {
-              "exerciseId": "seated-row-b",
-              "name": "坐姿划船",
-              "primaryMuscles": [
-                "中背",
-                "背阔肌"
-              ],
-              "secondaryMuscles": [
-                "后三角",
-                "肱二头肌"
-              ],
-              "notes": "作为背部容量补充",
-              "sets": [
-                {
-                  "kind": "working",
-                  "plannedWeight": "16.5",
-                  "targetReps": "10-12",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "16.5",
-                  "targetReps": "10-12",
-                  "restSeconds": 120
-                }
-              ]
-            },
-            {
-              "exerciseId": "single-arm-row-b",
-              "name": "单臂划船",
-              "primaryMuscles": [
-                "中背",
-                "背阔肌"
-              ],
-              "secondaryMuscles": [
-                "后三角",
-                "肱二头肌"
-              ],
-              "notes": "作为背部容量补充",
-              "sets": [
-                {
-                  "kind": "working",
-                  "plannedWeight": "16",
-                  "targetReps": "10-12",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "16",
-                  "targetReps": "10-12",
-                  "restSeconds": 120
-                }
-              ]
-            }
+          "exerciseId": "seated-row-b",
+          "name": "坐姿划船",
+          "primaryMuscles": ["中背", "背阔肌"],
+          "secondaryMuscles": ["后三角", "肱二头肌"],
+          "notes": "连续两次都做到12次再加重。作为背部容量补充",
+          "sets": [
+            { "kind": "working", "plannedWeight": "16.5", "targetReps": "10-12", "restSeconds": 120 },
+            { "kind": "working", "plannedWeight": "16.5", "targetReps": "10-12", "restSeconds": 120 }
           ]
         },
         {
-          "kind": "option",
-          "id": "b5-finisher",
-          "name": "收尾动作",
-          "options": [
-            {
-              "exerciseId": "bicep-curl",
-              "name": "二头弯举",
-              "primaryMuscles": [
-                "肱二头肌"
-              ],
-              "secondaryMuscles": [
-                "前臂"
-              ],
-              "sets": [
-                {
-                  "kind": "accessory",
-                  "plannedWeight": "8",
-                  "targetReps": "10-15",
-                  "restSeconds": 90
-                },
-                {
-                  "kind": "accessory",
-                  "plannedWeight": "8",
-                  "targetReps": "10-15",
-                  "restSeconds": 90
-                }
-              ]
-            },
-            {
-              "exerciseId": "pallof-press-b",
-              "name": "Pallof Press",
-              "primaryMuscles": [
-                "核心抗旋"
-              ],
-              "secondaryMuscles": [
-                "腹斜肌",
-                "腹直肌"
-              ],
-              "notes": "久坐人群优先",
-              "sets": [
-                {
-                  "kind": "accessory",
-                  "plannedWeight": "12",
-                  "targetReps": "10-15",
-                  "restSeconds": 90
-                },
-                {
-                  "kind": "accessory",
-                  "plannedWeight": "12",
-                  "targetReps": "10-15",
-                  "restSeconds": 90
-                }
-              ]
-            },
-            {
-              "exerciseId": "plank",
-              "name": "平板支撑",
-              "primaryMuscles": [
-                "核心"
-              ],
-              "sets": [
-                {
-                  "kind": "accessory",
-                  "plannedWeight": "自重",
-                  "targetReps": "至力竭",
-                  "restSeconds": 90
-                },
-                {
-                  "kind": "accessory",
-                  "plannedWeight": "自重",
-                  "targetReps": "至力竭",
-                  "restSeconds": 90
-                }
-              ]
-            }
+          "exerciseId": "bicep-curl",
+          "name": "二头弯举",
+          "primaryMuscles": ["肱二头肌"],
+          "secondaryMuscles": ["前臂"],
+          "notes": "先把动作做稳，再决定是否回到更重档位",
+          "sets": [
+            { "kind": "accessory", "plannedWeight": "4", "targetReps": "10-15", "restSeconds": 90 },
+            { "kind": "accessory", "plannedWeight": "4", "targetReps": "10-15", "restSeconds": 90 }
           ]
         }
       ]
@@ -538,71 +144,44 @@
         {
           "exerciseId": "hack-squat-c",
           "name": "哈克深蹲",
-          "primaryMuscles": [
-            "股四头肌"
-          ],
-          "secondaryMuscles": [
-            "臀大肌",
-            "内收肌"
-          ],
-          "notes": "C日唯一优先动作",
+          "primaryMuscles": ["股四头肌"],
+          "secondaryMuscles": ["臀大肌", "内收肌"],
+          "notes": "如果12.5kg首组只做5次，后面全部改10kg。C日唯一优先动作",
           "progressionHint": "顶组达到8次后可考虑小幅加重",
           "sets": [
-            {
-              "kind": "top",
-              "plannedWeight": "12.5",
-              "targetReps": "6-8",
-              "restSeconds": 180
-            },
-            {
-              "kind": "backoff",
-              "plannedWeight": "12.5",
-              "targetReps": "6-8",
-              "restSeconds": 180
-            },
-            {
-              "kind": "backoff",
-              "plannedWeight": "10",
-              "targetReps": "8-10",
-              "restSeconds": 180
-            },
-            {
-              "kind": "backoff",
-              "plannedWeight": "10",
-              "targetReps": "8-10",
-              "restSeconds": 180
-            }
+            { "kind": "top", "plannedWeight": "12.5", "targetReps": "6-8", "restSeconds": 180 },
+            { "kind": "backoff", "plannedWeight": "10", "targetReps": "8-10", "restSeconds": 180 },
+            { "kind": "backoff", "plannedWeight": "10", "targetReps": "8-10", "restSeconds": 180 },
+            { "kind": "backoff", "plannedWeight": "10", "targetReps": "8-10", "restSeconds": 180 }
           ]
         },
         {
-          "exerciseId": "smith-bench-c",
-          "name": "史密斯卧推",
-          "primaryMuscles": [
-            "胸大肌整体"
-          ],
-          "secondaryMuscles": [
-            "肱三头肌",
-            "三角肌前束"
-          ],
-          "notes": "比A日顶组轻10-15%",
-          "sets": [
+          "kind": "option",
+          "id": "c2-chest",
+          "name": "推胸动作",
+          "options": [
             {
-              "kind": "working",
-              "plannedWeight": "7.5",
-              "targetReps": "8-10",
-              "restSeconds": 120
+              "exerciseId": "chest-press-machine-c",
+              "name": "器械推胸",
+              "primaryMuscles": ["胸大肌整体"],
+              "secondaryMuscles": ["三角肌前束", "肱三头肌"],
+              "sets": [
+                { "kind": "working", "plannedWeight": "12.5", "targetReps": "8-10", "restSeconds": 120 },
+                { "kind": "working", "plannedWeight": "10", "targetReps": "8-10", "restSeconds": 120 },
+                { "kind": "working", "plannedWeight": "10", "targetReps": "8-10", "restSeconds": 120 }
+              ]
             },
             {
-              "kind": "working",
-              "plannedWeight": "7.5",
-              "targetReps": "8-10",
-              "restSeconds": 120
-            },
-            {
-              "kind": "working",
-              "plannedWeight": "7.5",
-              "targetReps": "8-10",
-              "restSeconds": 120
+              "exerciseId": "smith-bench-c",
+              "name": "史密斯卧推",
+              "primaryMuscles": ["胸大肌整体"],
+              "secondaryMuscles": ["肱三头肌", "三角肌前束"],
+              "notes": "两边各5kg替代",
+              "sets": [
+                { "kind": "working", "plannedWeight": "5", "targetReps": "8-10", "restSeconds": 120 },
+                { "kind": "working", "plannedWeight": "5", "targetReps": "8-10", "restSeconds": 120 },
+                { "kind": "working", "plannedWeight": "5", "targetReps": "8-10", "restSeconds": 120 }
+              ]
             }
           ]
         },
@@ -614,191 +193,47 @@
             {
               "exerciseId": "lat-pulldown-c",
               "name": "高位下拉",
-              "primaryMuscles": [
-                "背阔肌"
-              ],
-              "secondaryMuscles": [
-                "肱二头肌",
-                "后三角"
-              ],
-              "notes": "根据器械可用性选择",
+              "primaryMuscles": ["背阔肌"],
+              "secondaryMuscles": ["肱二头肌", "后三角"],
               "sets": [
-                {
-                  "kind": "working",
-                  "plannedWeight": "26",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "26",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "26",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                }
+                { "kind": "working", "plannedWeight": "34.75", "targetReps": "8-10", "restSeconds": 120 },
+                { "kind": "working", "plannedWeight": "34.75", "targetReps": "8-10", "restSeconds": 120 },
+                { "kind": "working", "plannedWeight": "34.75", "targetReps": "8-10", "restSeconds": 120 }
               ]
             },
             {
-              "exerciseId": "seated-row-c",
-              "name": "坐姿划船",
-              "primaryMuscles": [
-                "中背",
-                "背阔肌"
-              ],
-              "secondaryMuscles": [
-                "肱二头肌",
-                "后三角"
-              ],
-              "notes": "根据器械可用性选择",
+              "exerciseId": "assisted-pullup-c",
+              "name": "辅助引体",
+              "primaryMuscles": ["背阔肌"],
+              "secondaryMuscles": ["肱二头肌", "大圆肌"],
+              "notes": "用辅助34.5-38kg做3组8-10次",
               "sets": [
-                {
-                  "kind": "working",
-                  "plannedWeight": "16.5",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "16.5",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "16.5",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                }
+                { "kind": "working", "plannedWeight": "34.5", "targetReps": "8-10", "restSeconds": 120 },
+                { "kind": "working", "plannedWeight": "34.5", "targetReps": "8-10", "restSeconds": 120 },
+                { "kind": "working", "plannedWeight": "34.5", "targetReps": "8-10", "restSeconds": 120 }
               ]
             }
           ]
         },
         {
-          "kind": "option",
-          "id": "c4-hip",
-          "name": "髋伸动作",
-          "options": [
-            {
-              "exerciseId": "hip-thrust",
-              "name": "臀推",
-              "primaryMuscles": [
-                "臀大肌",
-                "腘绳肌近端"
-              ],
-              "secondaryMuscles": [
-                "竖脊肌"
-              ],
-              "notes": "脊柱保持中立，不追求腰部发力",
-              "sets": [
-                {
-                  "kind": "working",
-                  "plannedWeight": "40",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "40",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "40",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                }
-              ]
-            },
-            {
-              "exerciseId": "45-degree-back-extension",
-              "name": "45度背伸",
-              "primaryMuscles": [
-                "臀大肌",
-                "腘绳肌近端"
-              ],
-              "secondaryMuscles": [
-                "竖脊肌"
-              ],
-              "notes": "脊柱保持中立，不追求腰部发力",
-              "sets": [
-                {
-                  "kind": "working",
-                  "plannedWeight": "12.5",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "12.5",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                },
-                {
-                  "kind": "working",
-                  "plannedWeight": "12.5",
-                  "targetReps": "8-12",
-                  "restSeconds": 120
-                }
-              ]
-            }
+          "exerciseId": "45-degree-back-extension",
+          "name": "45度背伸展",
+          "primaryMuscles": ["臀大肌", "腘绳肌近端"],
+          "secondaryMuscles": ["竖脊肌"],
+          "notes": "先再稳定一轮，不急着加重。脊柱保持中立",
+          "sets": [
+            { "kind": "working", "plannedWeight": "12.5", "targetReps": "10-12", "restSeconds": 120 },
+            { "kind": "working", "plannedWeight": "12.5", "targetReps": "10-12", "restSeconds": 120 },
+            { "kind": "working", "plannedWeight": "12.5", "targetReps": "10-12", "restSeconds": 120 }
           ]
         },
         {
-          "kind": "option",
-          "id": "c5-finisher",
-          "name": "收尾动作",
-          "options": [
-            {
-              "exerciseId": "tricep-pushdown-c",
-              "name": "三头下压",
-              "primaryMuscles": [
-                "肱三头肌"
-              ],
-              "sets": [
-                {
-                  "kind": "accessory",
-                  "plannedWeight": "9",
-                  "targetReps": "12-15",
-                  "restSeconds": 90
-                },
-                {
-                  "kind": "accessory",
-                  "plannedWeight": "9",
-                  "targetReps": "12-15",
-                  "restSeconds": 90
-                }
-              ]
-            },
-            {
-              "exerciseId": "lateral-raise-c",
-              "name": "侧平举",
-              "primaryMuscles": [
-                "三角肌中束"
-              ],
-              "secondaryMuscles": [
-                "斜方肌上束"
-              ],
-              "sets": [
-                {
-                  "kind": "accessory",
-                  "plannedWeight": "5",
-                  "targetReps": "12-15",
-                  "restSeconds": 90
-                },
-                {
-                  "kind": "accessory",
-                  "plannedWeight": "5",
-                  "targetReps": "12-15",
-                  "restSeconds": 90
-                }
-              ]
-            }
+          "exerciseId": "tricep-pushdown",
+          "name": "三头下压",
+          "primaryMuscles": ["肱三头肌"],
+          "sets": [
+            { "kind": "accessory", "plannedWeight": "7", "targetReps": "12-15", "restSeconds": 90 },
+            { "kind": "accessory", "plannedWeight": "7", "targetReps": "12-15", "restSeconds": 90 }
           ]
         }
       ]
@@ -813,12 +248,7 @@
           "name": "爬坡跑步机",
           "notes": "坡度10-12，速度4-5km/h",
           "sets": [
-            {
-              "kind": "cardio",
-              "plannedWeight": "心率130-140",
-              "targetReps": "30-45分钟",
-              "restSeconds": 0
-            }
+            { "kind": "cardio", "plannedWeight": "心率130-140", "targetReps": "30-45分钟", "restSeconds": 0 }
           ]
         }
       ]
